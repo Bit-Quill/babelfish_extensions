@@ -10127,3 +10127,21 @@ AS 'babelfishpg_tsql', 'pltsql_get_last_stmt_handle' LANGUAGE C;
 CREATE OR REPLACE FUNCTION sys.get_babel_server_collation_oid() RETURNS OID
 LANGUAGE C
 AS 'babelfishpg_tsql', 'get_server_collation_oid';
+
+-- Internal function to call pg_get_viewdef
+CREATE OR REPLACE FUNCTION sys.tsql_get_viewdef(object_id OID)
+RETURNS sys.varchar
+AS
+$$
+    SELECT CAST(pg_get_viewdef(object_id) AS sys.varchar);
+$$
+LANGUAGE SQL IMMUTABLE;
+
+-- Internal function to call pg_get_triggerdef
+CREATE OR REPLACE FUNCTION sys.tsql_get_triggerdef(object_id oid)
+RETURNS sys.varchar
+AS
+$$
+SELECT CAST(pg_get_triggerdef(object_id) AS sys.varchar);
+$$
+LANGUAGE SQL IMMUTABLE;

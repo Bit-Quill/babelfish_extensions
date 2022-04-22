@@ -1522,9 +1522,9 @@ SELECT
   , CASE WHEN ao.type in ('P', 'FN', 'IN', 'TF', 'RF') THEN
 	    CAST(pg_get_functiondef(ao.object_id) AS sys.nvarchar)
 	  WHEN ao.type = 'V' THEN
-	    CAST(pg_get_viewdef(ao.object_id::oid) AS sys.nvarchar)
+	    CAST(sys.tsql_get_viewdef(ao.object_id::oid) AS sys.nvarchar)
 	  WHEN ao.type = 'TR' THEN
-	    CAST(pg_get_triggerdef(ao.object_id) AS sys.nvarchar)
+	    CAST(sys.tsql_get_triggerdef(ao.object_id) AS sys.nvarchar)
 	  ELSE
 	    CAST(NULL AS sys.nvarchar)
 	 END AS definition
