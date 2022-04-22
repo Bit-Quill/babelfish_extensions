@@ -1516,7 +1516,7 @@ from sys.all_objects t
 where t.type = 'V';
 GRANT SELECT ON sys.all_views TO PUBLIC;
 
-CREATE OR REPLACE VIEW sys.all_sql_modules AS
+CREATE OR REPLACE VIEW sys.all_sql_modules_internal AS
 SELECT 
     ao.object_id AS object_id
   , CASE WHEN ao.type in ('P', 'FN', 'IN', 'TF', 'RF') THEN
@@ -1544,27 +1544,43 @@ SELECT
   	END AS null_on_null_input
   , null::integer as execute_as_principal_id
   , CAST(0 as sys.bit) as uses_native_compilation
+  , CAST(ao.is_ms_shipped as INT) as is_ms_shipped
 FROM sys.all_objects ao
 LEFT JOIN pg_proc p ON ao.object_id = CAST(p.oid AS INT)
 WHERE ao.type in ('P', 'RF', 'V', 'TR', 'FN', 'IF', 'TF', 'R')
+ORDER BY object_id asc;
+GRANT SELECT ON sys.all_sql_modules_internal TO PUBLIC;
+
+CREATE OR REPLACE VIEW sys.all_sql_modules AS
+SELECT 
+	CAST(t1.object_id as int)
+   ,CAST(t1.definition as sys.nvarchar)
+   ,CAST(t1.uses_ansi_nulls as sys.bit)
+   ,CAST(t1.uses_quoted_identifier as sys.bit)
+   ,CAST(t1.is_schema_bound as sys.bit)
+   ,CAST(t1.uses_database_collation as sys.bit)
+   ,CAST(t1.is_recompiled as sys.bit)
+   ,CAST(t1.null_on_null_input as sys.bit)
+   ,CAST(t1.execute_as_principal_id as int)
+   ,CAST(t1.uses_native_compilation as sys.bit)
+FROM sys.all_sql_modules_internal t1
 ORDER BY object_id asc;
 GRANT SELECT ON sys.all_sql_modules TO PUBLIC;
 
 CREATE OR REPLACE VIEW sys.system_sql_modules AS
 SELECT 
-	  CAST(t1.object_id as int)
-  , CAST(t1.definition as sys.nvarchar)
-  , CAST(t1.uses_ansi_nulls as sys.bit)
-  , CAST(t1.uses_quoted_identifier as sys.bit)
-  , CAST(t1.is_schema_bound as sys.bit)
-  , CAST(t1.uses_database_collation as sys.bit)
-  , CAST(t1.is_recompiled as sys.bit)
-  , CAST(t1.null_on_null_input as sys.bit)
-  , CAST(t1.execute_as_principal_id as int)
-  , CAST(t1.uses_native_compilation as sys.bit)
-FROM sys.all_sql_modules t1
-INNER JOIN sys.all_objects t2 ON t1.object_id = t2.object_id 
-	AND CAST(t2.is_ms_shipped AS int) = 1
+	CAST(t1.object_id as int)
+   ,CAST(t1.definition as sys.nvarchar)
+   ,CAST(t1.uses_ansi_nulls as sys.bit)
+   ,CAST(t1.uses_quoted_identifier as sys.bit)
+   ,CAST(t1.is_schema_bound as sys.bit)
+   ,CAST(t1.uses_database_collation as sys.bit)
+   ,CAST(t1.is_recompiled as sys.bit)
+   ,CAST(t1.null_on_null_input as sys.bit)
+   ,CAST(t1.execute_as_principal_id as int)
+   ,CAST(t1.uses_native_compilation as sys.bit)
+FROM sys.all_sql_modules_internal t1
+WHERE t1.is_ms_shipped = 1
 ORDER BY object_id ASC;
 GRANT SELECT ON sys.system_sql_modules TO PUBLIC;
 
@@ -1580,9 +1596,8 @@ SELECT
    ,CAST(t1.null_on_null_input as sys.bit)
    ,CAST(t1.execute_as_principal_id as int)
    ,CAST(t1.uses_native_compilation as sys.bit)
-FROM sys.all_sql_modules t1
-INNER JOIN sys.all_objects t2 ON t1.object_id = t2.object_id 
-	AND CAST(t2.is_ms_shipped AS int) = 0
+FROM sys.all_sql_modules_internal t1
+WHERE t1.is_ms_shipped = 0
 ORDER BY object_id ASC;
 GRANT SELECT ON sys.sql_modules TO PUBLIC;
 

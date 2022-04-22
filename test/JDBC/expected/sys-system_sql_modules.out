@@ -1,0 +1,69 @@
+-- Setup
+CREATE DATABASE db1
+GO
+
+-- Test for system function
+SELECT
+    definition,
+    uses_ansi_nulls,
+    uses_quoted_identifier,
+    is_schema_bound,
+    uses_database_collation,
+    is_recompiled,
+    null_on_null_input,
+    execute_as_principal_id,
+    uses_native_compilation
+FROM sys.system_sql_modules
+WHERE object_id = OBJECT_ID('fn_sqlvarbasetostr')
+GO
+~~START~~
+nvarchar#!#bit#!#bit#!#bit#!#bit#!#bit#!#bit#!#int#!#bit
+~~END~~
+
+
+-- Test for system views
+SELECT
+    definition,
+    uses_ansi_nulls,
+    uses_quoted_identifier,
+    is_schema_bound,
+    uses_database_collation,
+    is_recompiled,
+    null_on_null_input,
+    execute_as_principal_id,
+    uses_native_compilation
+FROM sys.system_sql_modules
+WHERE object_id = OBJECT_ID('sys.tables')
+GO
+~~START~~
+nvarchar#!#bit#!#bit#!#bit#!#bit#!#bit#!#bit#!#int#!#bit
+<NULL>#!#1#!#1#!#0#!#0#!#0#!#0#!#<NULL>#!#0
+~~END~~
+
+
+-- Test for system proc
+SELECT
+    definition,
+    uses_ansi_nulls,
+    uses_quoted_identifier,
+    is_schema_bound,
+    uses_database_collation,
+    is_recompiled,
+    null_on_null_input,
+    execute_as_principal_id,
+    uses_native_compilation
+FROM sys.system_sql_modules
+WHERE object_id = OBJECT_ID('sp_tables')
+GO
+~~START~~
+nvarchar#!#bit#!#bit#!#bit#!#bit#!#bit#!#bit#!#int#!#bit
+CREATE OR REPLACE PROCEDURE sys.sp_tables(IN "@table_name" nvarchar DEFAULT ''::"varchar", IN "@table_owner" nvarchar DEFAULT ''::"varchar", IN "@table_qualifier" sysname DEFAULT ''::"varchar", IN "@table_type" nvarchar DEFAULT ''::"varchar", IN "@fusepattern" "bit" DEFAULT '1'::"bit")<newline> LANGUAGE pltsql<newline>AS '{"version_num": "1", "typmod_array": ["384", "384", "-1", "100", "-1"], "original_probin": ""}', $procedure$<newline> DECLARE @opt_table sys.varchar(16) = '';<newline> DECLARE @opt_view sys.varchar(16) = '';<newline>BEGIN<newline> IF (@table_qualifier != '') AND (LOWER(@table_qualifier) != LOWER(sys.db_name()))<newline> BEGIN<newline>  THROW 33557097, N'The database name component of the object qualifier must be the name of the current database.', 1;<newline> END<newline> SELECT<newline> CAST(out_table_qualifier AS sys.sysname) AS TABLE_QUALIFIER,<newline> CAST(out_table_owner AS sys.sysname) AS TABLE_OWNER,<newline> CAST(out_table_name AS sys.sysname) AS TABLE_NAME,<newline> CAST(out_table_type AS sys.varchar(32)) AS TABLE_TYPE,<newline> CAST(out_remarks AS sys.varchar(254)) AS REMARKS<newline> FROM sys.sp_tables_internal(@table_name, @table_owner, @table_qualifier, CAST(@table_type AS varchar(100)), @fusepattern);<newline>END;<newline>$procedure$<newline>#!#1#!#1#!#0#!#0#!#0#!#0#!#<NULL>#!#0
+~~END~~
+
+
+-- Cleanup
+USE master
+GO
+
+DROP DATABASE db1
+GO
