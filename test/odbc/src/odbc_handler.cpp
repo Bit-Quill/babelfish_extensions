@@ -151,6 +151,7 @@ void OdbcHandler::CloseStmt() {
 
 void OdbcHandler::SetConnectionProperties(ConnectionObject &co) {
 
+<<<<<<< HEAD:test/odbc/src/odbc_handler.cpp
   db_driver_ = co.GetDriver();
   db_server_ = co.GetServer();
   db_port_ = co.GetPort();
@@ -159,6 +160,39 @@ void OdbcHandler::SetConnectionProperties(ConnectionObject &co) {
   db_dbname_ = co.GetDbname();
 
   connection_string_ = co.GetConnectionString();
+=======
+  map<string, string> config_file_values = ParseConfigFile();
+  db_driver_ = getenv("ODBC_DRIVER_NAME") ? string(getenv("BABEL_DB_SERVER")) : 
+      config_file_values.find("ODBC_DRIVER_NAME") != config_file_values.end() ? config_file_values["ODBC_DRIVER_NAME"] : ODBC_DRIVER_NAME;
+  switch (server_type) {
+    case ServerType::Babel:
+      db_server_ = getenv("BABEL_DB_SERVER") ? string(getenv("BABEL_DB_SERVER")) :
+          config_file_values.find("BABEL_DB_SERVER") != config_file_values.end() ? config_file_values["BABEL_DB_SERVER"] : BABEL_DB_SERVER;
+      db_port_ = getenv("BABEL_DB_PORT") ? string(getenv("BABEL_DB_PORT")) :
+          config_file_values.find("BABEL_DB_PORT") != config_file_values.end() ? config_file_values["BABEL_DB_PORT"] : BABEL_DB_PORT;
+      db_uid_ = getenv("BABEL_DB_USER") ? string(getenv("BABEL_DB_USER")) :
+          config_file_values.find("BABEL_DB_USER") != config_file_values.end() ? config_file_values["BABEL_DB_USER"] : BABEL_DB_USER;
+      db_pwd_ = getenv("BABEL_DB_PASSWORD") ? string(getenv("BABEL_DB_PASSWORD")) :
+          config_file_values.find("BABEL_DB_PASSWORD") != config_file_values.end() ? config_file_values["BABEL_DB_PASSWORD"] : BABEL_DB_PASSWORD;
+      db_dbname_ = getenv("BABEL_DB_NAME") ? string(getenv("BABEL_DB_NAME")) :
+          config_file_values.find("BABEL_DB_NAME") != config_file_values.end() ? config_file_values["BABEL_DB_NAME"] : BABEL_DB_NAME;
+      break;
+    case ServerType::SQL:
+      db_server_ = getenv("SQL_DB_SERVER") ? string(getenv("SQL_DB_SERVER")) :
+          config_file_values.find("SQL_DB_SERVER") != config_file_values.end() ? config_file_values["SQL_DB_SERVER"] : SQL_DB_SERVER;
+      db_port_ = getenv("SQL_DB_PORT") ? string(getenv("SQL_DB_PORT")) :
+          config_file_values.find("SQL_DB_PORT") != config_file_values.end() ? config_file_values["SQL_DB_PORT"] : SQL_DB_PORT;
+      db_uid_ = getenv("SQL_DB_USER") ? string(getenv("SQL_DB_USER")) :
+          config_file_values.find("SQL_DB_USER") != config_file_values.end() ? config_file_values["SQL_DB_USER"] : SQL_DB_USER;
+      db_pwd_ = getenv("SQL_DB_PASSWORD") ? string(getenv("SQL_DB_PASSWORD")) :
+          config_file_values.find("SQL_DB_PASSWORD") != config_file_values.end() ? config_file_values["SQL_DB_PASSWORD"] : SQL_DB_PASSWORD;
+      db_dbname_ = getenv("SQL_DB_NAME") ? string(getenv("SQL_DB_NAME")) :
+          config_file_values.find("SQL_DB_NAME") != config_file_values.end() ? config_file_values["SQL_DB_NAME"] : SQL_DB_NAME;
+      break;
+  }
+  connection_string_ = "DRIVER={" + db_driver_ + "};SERVER=" + db_server_ + ";PORT=" + db_port_ + ";UID=" + db_uid_ + ";PWD=" + db_pwd_ + ";DATABASE=" + db_dbname_;
+  return; 
+>>>>>>> 0eb37454 (Added initial psqlodbc datatype test for bigint):test/odbc/odbc_handler.cpp
 }
 
 void OdbcHandler::AssertSqlSuccess(RETCODE retcode, const string& error_msg) {
@@ -240,6 +274,8 @@ string OdbcHandler::GetErrorMessage(SQLSMALLINT HandleType, const RETCODE& retco
 }
 
 void OdbcHandler::BindColumns(vector<tuple<int, int, SQLPOINTER, int>> columns) {
+
+  // ToDo: Refactor this to call the other BindColumns function with std::tuple_cat
   RETCODE rcode;
 
   for (auto column : columns) {
