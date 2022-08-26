@@ -1,10 +1,10 @@
-#include "odbc_handler.h"
+#include "../odbc_handler.h"
 #include <gtest/gtest.h>
 #include <sqlext.h>
 
 static const int BUFFER = 255;
 
-class SQLGetInfoTest : public testing::Test{
+class MSSQL_SQLGetInfoTest : public testing::Test{
   
 };
 
@@ -63,7 +63,7 @@ string SqlGetInfoSupportError(string sqlgetinfo_option, string supported_feature
 
 // Tests if SQLGetInfo retrieves the correct server name with SQL_SERVER_NAME option
 // DISABLED: PLEASE SEE BABELFISH-125
-TEST_F(SQLGetInfoTest, DISABLED_SQLGetInfo_SQL_SERVER_NAME) {
+TEST_F(MSSQL_SQLGetInfoTest, DISABLED_SQLGetInfo_SQL_SERVER_NAME) {
 
   OdbcHandler odbcHandler;
   char output[BUFFER];
@@ -76,7 +76,7 @@ TEST_F(SQLGetInfoTest, DISABLED_SQLGetInfo_SQL_SERVER_NAME) {
 
 // Tests if SQLGetInfo retrieves the correct server name with SQL_USER_NAME option
 // DISABLED: PLEASE SEE BABELFISH-126
-TEST_F(SQLGetInfoTest, DISABLED_SQLGetInfo_SQL_USER_NAME) {
+TEST_F(MSSQL_SQLGetInfoTest, DISABLED_SQLGetInfo_SQL_USER_NAME) {
 
   OdbcHandler odbcHandler;
   char output[BUFFER];
@@ -88,7 +88,7 @@ TEST_F(SQLGetInfoTest, DISABLED_SQLGetInfo_SQL_USER_NAME) {
 }
 
 // Tests if SQLGetInfo retrieves the correct value for SQL_DATA_SOURCE_READ_ONLY
-TEST_F(SQLGetInfoTest, SQLGetInfo_SQL_DATA_SOURCE_READ_ONLY) {
+TEST_F(MSSQL_SQLGetInfoTest, SQLGetInfo_SQL_DATA_SOURCE_READ_ONLY) {
 
   OdbcHandler odbcHandler;
   char output[BUFFER];
@@ -100,7 +100,7 @@ TEST_F(SQLGetInfoTest, SQLGetInfo_SQL_DATA_SOURCE_READ_ONLY) {
 
 // Tests if SQLGetInfo retrieves the correct values for SQL_CREATE_TABLE. 
 // NOTE: Assertions may need to be redefined based on BBF settings
-TEST_F(SQLGetInfoTest, SQLGetInfo_SQL_CREATE_TABLE) {
+TEST_F(MSSQL_SQLGetInfoTest, SQLGetInfo_SQL_CREATE_TABLE) {
   OdbcHandler odbcHandler;
   SQLUINTEGER output;
   string sqlgetinfo_option = "SQL_CREATE_TABLE";
@@ -110,7 +110,7 @@ TEST_F(SQLGetInfoTest, SQLGetInfo_SQL_CREATE_TABLE) {
 
 // Tests if SQLGetInfo retrieves the correct values for SQL_DROP_TABLE. 
 // NOTE: Assertions may need to be redefined based on BBF settings
-TEST_F(SQLGetInfoTest, SQLGetInfo_SQL_DROP_TABLE) {
+TEST_F(MSSQL_SQLGetInfoTest, SQLGetInfo_SQL_DROP_TABLE) {
   OdbcHandler odbcHandler;
   SQLUINTEGER output = 0;
   string sqlgetinfo_option = "SQL_DROP_TABLE";
@@ -120,7 +120,7 @@ TEST_F(SQLGetInfoTest, SQLGetInfo_SQL_DROP_TABLE) {
 
 // Tests if SQLGetInfo retrieves the correct values for SQL_ALTER_TABLE. 
 // NOTE: Assertions may need to be redefined based on BBF settings
-TEST_F(SQLGetInfoTest, SQLGetInfo_SQL_ALTER_TABLE) {
+TEST_F(MSSQL_SQLGetInfoTest, SQLGetInfo_SQL_ALTER_TABLE) {
   OdbcHandler odbcHandler;
   SQLUINTEGER output = 0;
   string sqlgetinfo_option = "SQL_ALTER_TABLE";
@@ -134,7 +134,7 @@ TEST_F(SQLGetInfoTest, SQLGetInfo_SQL_ALTER_TABLE) {
 
 // Tests if SQLGetInfo retrieves the correct values for SQL_INSERT_STATEMENT. 
 // NOTE: Assertions may need to be redefined based on BBF settings
-TEST_F(SQLGetInfoTest, SQLGetInfo_SQL_INSERT_STATEMENT) {
+TEST_F(MSSQL_SQLGetInfoTest, SQLGetInfo_SQL_INSERT_STATEMENT) {
 
   OdbcHandler odbcHandler;
   SQLUINTEGER output = 0;

@@ -7,6 +7,7 @@
 #include <tuple>
 #include <vector>
 #include "constants.h"
+#include "connection_string_object.h"
 
 using std::string;
 using std::map;
@@ -25,10 +26,10 @@ class OdbcHandler {
     ~OdbcHandler();
 
     // Sets the connection string based on server type
-    void SetConnectionString(ServerType server_type);
+    void SetConnectionString();
     
     // Connects to Database
-    void Connect(bool allocate_statement_handle = false);
+    void Connect(bool allocate_statement_handle = false, ServerType st=ServerType::MSSQL);
 
     // Returns the environment handle
     SQLHENV GetEnvironmentHandle();
@@ -43,25 +44,7 @@ class OdbcHandler {
     RETCODE GetReturnCode();
 
     // Returns the connection string 
-    string GetConnectionString();
-
-    // Returns the driver name
-    string GetDriver();
-
-    // Returns the server name
-    string GetServer();
-
-    // Returns the port
-    string GetPort();
-
-    // Returns the username/uid used for database login
-    string GetUid();
-
-    // Returns the password used for database login
-    string GetPwd();
-
-    // Returns the database used
-    string GetDbname();
+    string GetConnectionString(ServerType st);
 
     // Allocates the connection handle and sets the environment attribute
     void AllocateEnvironmentHandle();
@@ -108,29 +91,24 @@ class OdbcHandler {
 
     void BindColumns(vector<tuple<int, int, SQLPOINTER, int>> columns);
 
+    map<ServerType, ConnectionStringObject> getOdbcDrivers();
+
   private:
     // ODBC-defined SQL variables
     SQLHENV henv_{};
     SQLHDBC hdbc_{};
     SQLHSTMT hstmt_{};
     RETCODE retcode_{};
-    
-    // DB Information
-    string db_driver_{};
-    string db_server_{};
-    string db_port_{};
-    string db_uid_{};
-    string db_pwd_{};
-    string db_dbname_{};
 
-    // Build the connection string for SQLDriverConnect
-    string connection_string_{};
 
     // A map that contains values from the configuration file
     map<string, string> config_file_values_{};
 
     // Goes through config.txt and returns a map with values from the configuration file
     map<string, string> ParseConfigFile();
+
+    // map of server type to connection string info
+    map<ServerType, ConnectionStringObject> odbc_drivers{};
 
 };
 

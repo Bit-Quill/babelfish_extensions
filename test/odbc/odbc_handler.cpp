@@ -7,7 +7,7 @@
 using std::pair;
 
 OdbcHandler::OdbcHandler() {
-  SetConnectionString(ServerType::Babel);
+  SetConnectionString();
 }
 
 OdbcHandler::~OdbcHandler() {
@@ -16,11 +16,11 @@ OdbcHandler::~OdbcHandler() {
   FreeEnvironmentHandle();
 }
 
-void OdbcHandler::Connect(bool allocate_statement_handle) {
+void OdbcHandler::Connect(bool allocate_statement_handle, ServerType st) {
 
   const int MAX_ATTEMPTS = 4;
   int attempts = 0;
-  string connection_str = GetConnectionString();
+  string connection_str = GetConnectionString(st);
   AllocateEnvironmentHandle();
   AllocateConnectionHandle();
   SQLSetConnectAttr(hdbc_, SQL_ATTR_LOGIN_TIMEOUT, (SQLPOINTER)5, 0); // 5 seconds
@@ -53,32 +53,15 @@ RETCODE OdbcHandler::GetReturnCode() {
   return this->retcode_;
 }
 
-string OdbcHandler::GetConnectionString() {
-  return this->connection_string_;
+map<ServerType, ConnectionStringObject> OdbcHandler::getOdbcDrivers() {
+  return this->odbc_drivers;
 }
 
-string OdbcHandler::GetDriver() {
-  return this->db_driver_;
-}
-
-string OdbcHandler::GetServer() {
-  return this->db_server_;
-}
-
-string OdbcHandler::GetPort() {
-  return this->db_port_;
-}
-
-string OdbcHandler::GetUid() {
-  return this->db_uid_;
-}
-
-string OdbcHandler::GetPwd() {
-  return this->db_pwd_;
-}
-
-string OdbcHandler::GetDbname() {
-  return this->db_dbname_;
+string OdbcHandler::GetConnectionString(ServerType st) {
+  map<ServerType, ConnectionStringObject> drivers_map = this->odbc_drivers;
+  ConnectionStringObject cso = drivers_map.find(st)->second;
+  string connection_str = cso.GetConnectionString();
+  return connection_str;
 }
 
 void OdbcHandler::AllocateEnvironmentHandle() {
@@ -153,38 +136,46 @@ void OdbcHandler::CloseStmt() {
   }
 }
 
-void OdbcHandler::SetConnectionString (ServerType server_type) {
+void OdbcHandler::SetConnectionString () {
 
   map<string, string> config_file_values = ParseConfigFile();
-  db_driver_ = getenv("ODBC_DRIVER_NAME") ? string(getenv("BABEL_DB_SERVER")) : 
-      config_file_values.find("ODBC_DRIVER_NAME") != config_file_values.end() ? config_file_values["ODBC_DRIVER_NAME"] : ODBC_DRIVER_NAME;
-  switch (server_type) {
-    case ServerType::Babel:
-      db_server_ = getenv("BABEL_DB_SERVER") ? string(getenv("BABEL_DB_SERVER")) :
-          config_file_values.find("BABEL_DB_SERVER") != config_file_values.end() ? config_file_values["BABEL_DB_SERVER"] : BABEL_DB_SERVER;
-      db_port_ = getenv("BABEL_DB_PORT") ? string(getenv("BABEL_DB_PORT")) :
-          config_file_values.find("BABEL_DB_PORT") != config_file_values.end() ? config_file_values["BABEL_DB_PORT"] : BABEL_DB_PORT;
-      db_uid_ = getenv("BABEL_DB_USER") ? string(getenv("BABEL_DB_USER")) :
-          config_file_values.find("BABEL_DB_USER") != config_file_values.end() ? config_file_values["BABEL_DB_USER"] : BABEL_DB_USER;
-      db_pwd_ = getenv("BABEL_DB_PASSWORD") ? string(getenv("BABEL_DB_PASSWORD")) :
-          config_file_values.find("BABEL_DB_PASSWORD") != config_file_values.end() ? config_file_values["BABEL_DB_PASSWORD"] : BABEL_DB_PASSWORD;
-      db_dbname_ = getenv("BABEL_DB_NAME") ? string(getenv("BABEL_DB_NAME")) :
-          config_file_values.find("BABEL_DB_NAME") != config_file_values.end() ? config_file_values["BABEL_DB_NAME"] : BABEL_DB_NAME;
-      break;
-    case ServerType::SQL:
-      db_server_ = getenv("SQL_DB_SERVER") ? string(getenv("SQL_DB_SERVER")) :
-          config_file_values.find("SQL_DB_SERVER") != config_file_values.end() ? config_file_values["SQL_DB_SERVER"] : SQL_DB_SERVER;
-      db_port_ = getenv("SQL_DB_PORT") ? string(getenv("SQL_DB_PORT")) :
-          config_file_values.find("SQL_DB_PORT") != config_file_values.end() ? config_file_values["SQL_DB_PORT"] : SQL_DB_PORT;
-      db_uid_ = getenv("SQL_DB_USER") ? string(getenv("SQL_DB_USER")) :
-          config_file_values.find("SQL_DB_USER") != config_file_values.end() ? config_file_values["SQL_DB_USER"] : SQL_DB_USER;
-      db_pwd_ = getenv("SQL_DB_PASSWORD") ? string(getenv("SQL_DB_PASSWORD")) :
-          config_file_values.find("SQL_DB_PASSWORD") != config_file_values.end() ? config_file_values["SQL_DB_PASSWORD"] : SQL_DB_PASSWORD;
-      db_dbname_ = getenv("SQL_DB_NAME") ? string(getenv("SQL_DB_NAME")) :
-          config_file_values.find("SQL_DB_NAME") != config_file_values.end() ? config_file_values["SQL_DB_NAME"] : SQL_DB_NAME;
-      break;
+
+  static map<ServerType, string>::iterator it;
+  for (it = server_to_odbc_types.begin(); it != server_to_odbc_types.end(); it++)
+  {
+    string env_db_driver_ = it->second + "_ODBC_DRIVER_NAME";
+    string env_db_server_ = it->second + "_BABEL_DB_SERVER";
+    string env_db_port_ = it->second + "_BABEL_DB_PORT";
+    string env_db_uid_ = it->second + "_BABEL_DB_USER";
+    string env_db_pwd_ = it->second + "_BABEL_DB_PASSWORD";
+    string env_db_dbname_ = it->second + "_BABEL_DB_NAME";
+    string env_test_to_run_ = it->second + "_TEST_TO_RUN";
+
+    string db_driver_ = getenv(env_db_driver_.c_str()) ? string(getenv(env_db_driver_.c_str())) : 
+        config_file_values.find(env_db_driver_) != config_file_values.end() ? config_file_values[env_db_driver_] : "";
+        
+    string db_server_ = getenv(env_db_server_.c_str()) ? string(getenv(env_db_server_.c_str())) :
+        config_file_values.find(env_db_server_) != config_file_values.end() ? config_file_values[env_db_server_] : "";
+
+    string db_port_ = getenv(env_db_port_.c_str()) ? string(getenv(env_db_port_.c_str())) :
+        config_file_values.find(env_db_port_) != config_file_values.end() ? config_file_values[env_db_port_] : "";
+
+    string db_uid_ = getenv(env_db_uid_.c_str()) ? string(getenv(env_db_uid_.c_str())) :
+        config_file_values.find(env_db_uid_) != config_file_values.end() ? config_file_values[env_db_uid_] : "";
+
+    string db_pwd_ = getenv(env_db_pwd_.c_str()) ? string(getenv(env_db_pwd_.c_str())) :
+        config_file_values.find(env_db_pwd_) != config_file_values.end() ? config_file_values[env_db_pwd_] : "";
+
+    string db_dbname_ = getenv(env_db_dbname_.c_str()) ? string(getenv(env_db_dbname_.c_str())) :
+        config_file_values.find(env_db_dbname_) != config_file_values.end() ? config_file_values[env_db_dbname_] : "";
+    
+    string test_to_run_ = getenv(env_test_to_run_.c_str()) ? string(getenv(env_test_to_run_.c_str())) :
+        config_file_values.find(env_test_to_run_) != config_file_values.end() ? config_file_values[env_test_to_run_] : "";
+    
+    ConnectionStringObject cso(db_driver_, db_server_, db_port_, db_uid_, db_pwd_, db_dbname_, test_to_run_);
+    if (test_to_run_ != "")
+      odbc_drivers.insert(pair<ServerType, ConnectionStringObject>(it->first,cso));
   }
-  connection_string_ = "DRIVER={" + db_driver_ + "};SERVER=" + db_server_ + "," + db_port_ + ";UID=" + db_uid_ + ";PWD=" + db_pwd_ + ";DATABASE=" + db_dbname_;
   return; 
 }
 

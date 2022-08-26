@@ -23,18 +23,14 @@ add_executable(
 
   main
   constants.cpp
+  connection_string_object.cpp
   database_objects.cpp
   odbc_handler.cpp
   query_generator.cpp
-  test_connection.cpp
-  test_data_types.cpp
-  test_diagnostics.cpp
-  test_direct_executed_statements.cpp
-  test_transactions.cpp
-  test_resultset.cpp
-  test_metadata.cpp
-  test_prepared_statements.cpp
-  test_sqlgetinfo.cpp
+  psqlodbc/test_connection.cpp
+  mssqlodbc/test_connection.cpp
+  mssqlodbc/test_metadata.cpp
+  mssqlodbc/test_sqlgetinfo.cpp
   main.cpp
 )
 
