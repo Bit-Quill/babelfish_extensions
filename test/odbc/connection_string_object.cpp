@@ -1,7 +1,4 @@
 #include "odbc_handler.h"
-#include <sqlext.h>
-#include <fstream>
-#include <gtest/gtest.h>
 
 ConnectionStringObject::ConnectionStringObject(string driver, string server, string port, string uid, string pwd, string dbname, string test_to_run) {
     db_driver_ = driver;

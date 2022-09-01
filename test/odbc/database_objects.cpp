@@ -1,15 +1,14 @@
 #include "database_objects.h"
 #include "query_generator.h"
 
-#include <iostream>
-
 using std::string;
 using std::vector;
 using std::pair;
 
-DatabaseObjects::DatabaseObjects() {
-
-  odbcHandler.Connect(true);
+DatabaseObjects::DatabaseObjects(ServerType st) 
+  : odbcHandler(st) 
+{
+    odbcHandler.Connect(true);
 }
 
 DatabaseObjects::~DatabaseObjects() {

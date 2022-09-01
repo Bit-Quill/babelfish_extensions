@@ -1,9 +1,6 @@
 #include "../odbc_handler.h"
 #include <gtest/gtest.h>
-#include <sql.h>
 #include <sqlext.h>
-#include <iostream>
-#include <string>
 
 using std::unique_ptr;
 
@@ -13,14 +10,14 @@ class PSQL_Connection : public testing::Test{
 
 TEST_F(PSQL_Connection, SQLDriverConnect_2_SuccessfulConnectionTest) {
 
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(ServerType::PSQL);
 
   odbcHandler.AllocateEnvironmentHandle();
   odbcHandler.AllocateConnectionHandle();
 
   RETCODE rcode = SQLDriverConnect(odbcHandler.GetConnectionHandle(),
                                 nullptr, 
-                                (SQLCHAR *) odbcHandler.GetConnectionString(ServerType::PSQL).c_str(), 
+                                (SQLCHAR *) odbcHandler.GetConnectionString().c_str(), 
                                 SQL_NTS, 
                                 nullptr, 
                                 0, 
@@ -28,4 +25,5 @@ TEST_F(PSQL_Connection, SQLDriverConnect_2_SuccessfulConnectionTest) {
                                 SQL_DRIVER_COMPLETE);
 
   ASSERT_TRUE(rcode == SQL_SUCCESS_WITH_INFO || rcode == SQL_SUCCESS);
+
 }

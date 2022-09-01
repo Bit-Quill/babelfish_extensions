@@ -1,11 +1,9 @@
 #ifndef CONNECTION_STRING_OBJECT_H
 #define CONNECTION_STRING_OBJECT_H
 
-#include "odbc_handler.h"
 #include <string>
 
 using std::string;
-using namespace constants;
 
 
 class ConnectionStringObject {

@@ -2,16 +2,15 @@
 #define DATABASE_OBJECTS_H
 
 #include "odbc_handler.h"
-#include <string>
-#include <map>
-#include <vector>
+#include "constants.h"
 
+using namespace constants; 
 
 class DatabaseObjects {
 
   public:
 
-  DatabaseObjects();
+  DatabaseObjects(ServerType st);
   ~DatabaseObjects();
 
   void CreateSchema(const std::string &schema_name);

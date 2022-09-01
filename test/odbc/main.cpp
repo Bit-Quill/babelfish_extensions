@@ -1,14 +1,11 @@
 #include <gtest/gtest.h>
 #include <map>
 #include <string>
-#include "odbc_handler.h"
-
-using std::map;
-using std::string;
+#include "drivers.h"
 
 int main(int argc, char **argv) {
-  OdbcHandler odbcHandler;
-  map<ServerType, ConnectionStringObject> drivers = odbcHandler.getOdbcDrivers();
+  Drivers d;
+  map<ServerType, ConnectionStringObject> drivers = d.getOdbcDrivers();
   string filter_string = "";
 
   map<ServerType, ConnectionStringObject>::iterator it;
