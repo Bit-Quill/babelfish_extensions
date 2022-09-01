@@ -18,11 +18,12 @@ class Drivers {
 
     void SetDrivers();
 
-    map<ServerType, ConnectionStringObject> getOdbcDrivers();
+    map<ServerType, ConnectionStringObject> GetOdbcDrivers();
+
 
   private:
 
-    map<ServerType, ConnectionStringObject> odbc_drivers{};
+    static map<ServerType, ConnectionStringObject> odbc_drivers_;
 
     // Goes through config.txt and returns a map with values from the configuration file
     map<string, string> ParseConfigFile();

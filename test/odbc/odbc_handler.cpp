@@ -153,7 +153,7 @@ void OdbcHandler::CloseStmt() {
 
 void OdbcHandler::SetConnectionString (ServerType st) {
   Drivers drivers;
-  ConnectionStringObject cso = drivers.getOdbcDrivers().find(st)->second;
+  ConnectionStringObject cso = drivers.GetOdbcDrivers().find(st)->second;
 
   db_driver_ = cso.GetDriver();
   db_server_ = cso.GetServer();

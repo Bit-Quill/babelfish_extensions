@@ -1,11 +1,9 @@
 #include <gtest/gtest.h>
-#include <map>
-#include <string>
 #include "drivers.h"
 
 int main(int argc, char **argv) {
   Drivers d;
-  map<ServerType, ConnectionStringObject> drivers = d.getOdbcDrivers();
+  map<ServerType, ConnectionStringObject> drivers = d.GetOdbcDrivers();
   string filter_string = "";
 
   map<ServerType, ConnectionStringObject>::iterator it;

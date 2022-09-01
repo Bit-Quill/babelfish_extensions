@@ -4,7 +4,9 @@
 using std::pair;
 
 Drivers::Drivers() {
-  SetDrivers();
+  if (odbc_drivers_.empty()) {
+   SetDrivers();
+  }
 }
 
 Drivers::~Drivers() {
@@ -48,7 +50,7 @@ void Drivers::SetDrivers() {
     
     ConnectionStringObject cso(db_driver_, db_server_, db_port_, db_uid_, db_pwd_, db_dbname_, test_to_run_);
     if (test_to_run_ != "")
-      odbc_drivers.insert(pair<ServerType, ConnectionStringObject>(it->first,cso));
+      odbc_drivers_.insert(pair<ServerType, ConnectionStringObject>(it->first,cso));
   }
   return; 
 
@@ -88,6 +90,8 @@ map<string, string> Drivers::ParseConfigFile() {
     return config_file_values;
 }
 
-map<ServerType, ConnectionStringObject> Drivers::getOdbcDrivers() {
-  return odbc_drivers;
+map<ServerType, ConnectionStringObject> Drivers::GetOdbcDrivers() {
+  return odbc_drivers_;
 }
+
+map<ServerType, ConnectionStringObject> Drivers::odbc_drivers_{};
