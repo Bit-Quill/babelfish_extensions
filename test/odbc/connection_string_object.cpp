@@ -1,3 +1,4 @@
+#include "connection_string_object.h"
 #include "odbc_handler.h"
 
 ConnectionStringObject::ConnectionStringObject(string driver, string server, string port, string uid, string pwd, string dbname, string test_to_run) {
