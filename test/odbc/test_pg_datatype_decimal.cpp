@@ -495,11 +495,10 @@ TEST_F(PSQL_DataTypes_Decimal, Update_Fail) {
 
   rcode = SQLFetch(odbcHandler.GetStatementHandle());
   ASSERT_EQ(rcode, SQL_NO_DATA);
-  odbcHandler.CloseStmt();
-
 
   for (int i = 0; i < inserted_values.size(); i++) 
   {
+    odbcHandler.CloseStmt();
     vector<pair<string,string>> update_col;
 
     // setup update column
