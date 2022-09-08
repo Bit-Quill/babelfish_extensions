@@ -25,6 +25,10 @@ std::string CreateProcedureStatement(const std::string &procedure_name, const st
 // function_name may include database and/or schema name, e.g. schema_name.function_name
 std::string CreateFunctionStatement(const std::string &function_name, const std::string &function_definition);
 
+// new_values contain a pair of column names : new values 
+// where_clause is a list of valid conditions to update
+std::string UpdateTableStatement(const std::string &table_name, const std::vector<std::pair<std::string, std::string>> &new_values, const std::string where_clause = "");
+
 // Object type can be "TABLE", "VIEW", "PROCEDURE", etc. Any valid database object type.
 // If check_exists is true, the statement will contain 'IF EXISTS'
 std::string DropObjectStatement(const std::string &object_kind, const std::string &object_name, bool check_exists = true);
