@@ -196,8 +196,6 @@ TEST_F(PSQL_DataTypes_int, Insertion_Success) {
 
 TEST_F(PSQL_DataTypes_int, Insertion_Fail) {
 
-  const int BYTES_EXPECTED = 4;
-
   int pk;
   int data;
   SQLLEN pk_len;
