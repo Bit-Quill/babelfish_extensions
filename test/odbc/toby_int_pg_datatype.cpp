@@ -3,6 +3,7 @@
 #include "odbc_handler.h"
 #include "query_generator.h"
 #include <iostream>
+#include <math.h>
 using std::pair;
 
 const string TABLE_NAME = "master_dbo.int_table_odbc_test";
@@ -411,20 +412,22 @@ TEST_F(PSQL_DataTypes_int, Arithmetic_Operators) {
   OdbcHandler odbcHandler;
 
   vector <string> inserted_pk = {
-    "20",
-    "-30"
+    "2",
+    "-3"
   };
 
   vector <string> inserted_data = {
-    "40",
-    "20"
+    "4",
+    "2"
   };
 
   vector <string> operations_query = {
     COL1_NAME + "+" + COL2_NAME,
     COL1_NAME + "-" + COL2_NAME,
     COL1_NAME + "*" + COL2_NAME,
-    COL1_NAME + "/" + COL2_NAME
+    COL1_NAME + "/" + COL2_NAME,
+    "ABS(" + COL1_NAME + ")",
+    "POWER(" + COL1_NAME+","+COL2_NAME + ")"
   };
 
   vector<vector<long int>>expected_results = {{},{}};
@@ -435,6 +438,8 @@ TEST_F(PSQL_DataTypes_int, Arithmetic_Operators) {
     expected_results[i].push_back(StringToInt4(inserted_pk[i]) - StringToInt4(inserted_data[i]));
     expected_results[i].push_back(StringToInt4(inserted_pk[i]) * StringToInt4(inserted_data[i]));
     expected_results[i].push_back(StringToInt4(inserted_pk[i]) / StringToInt4(inserted_data[i]));
+    expected_results[i].push_back(abs(StringToInt4(inserted_pk[i])));
+    expected_results[i].push_back(pow(StringToInt4(inserted_pk[i]),StringToInt4(inserted_data[i])));
   }
 
   int col_results[operations_query.size()];
@@ -484,6 +489,7 @@ TEST_F(PSQL_DataTypes_int, Arithmetic_Operators) {
 
       ASSERT_EQ(col_len[j], BYTES_EXPECTED);
       ASSERT_EQ(col_results[j], expected_results[i][j]);
+      std::cout<<"Expected Result: "<< expected_results[i][j]<<'\n';
     }
   }
 
