@@ -17,7 +17,7 @@ vector<pair<string, string>> TABLE_COLUMNS_TINYINT = {
     {COL2_NAME, DATATYPE_NAME}
   };
 
-class PSQL_DataTypes_int : public testing::Test{
+class PSQL_DataTypes_Tinyint : public testing::Test{
 
   void SetUp() override {
     OdbcHandler test_setup;
@@ -38,13 +38,13 @@ long int StringToTinyInt(const string &value) {
   return strtol(value.c_str(), NULL, 10);
 }
 
-TEST_F(PSQL_DataTypes_int, Table_Creation) {
+TEST_F(PSQL_DataTypes_Tinyint, Table_Creation) {
 
-  const int LENGTH_EXPECTED = 3;
+  const int LENGTH_EXPECTED = 6;
   const int PRECISION_EXPECTED = 0;
   const int SCALE_EXPECTED = 0;
   const string NAME_EXPECTED = "NULL";
-  const int BYTES_EXPECTED = 1;
+  const int BYTES_EXPECTED = 2;
 
   const int BUFFER_SIZE = 256;
   char name[BUFFER_SIZE];
@@ -71,7 +71,7 @@ TEST_F(PSQL_DataTypes_int, Table_Creation) {
                           NULL,
                           (SQLLEN*) &length);
   ASSERT_EQ(rcode, SQL_SUCCESS);
-  // ASSERT_EQ(length, LENGTH_EXPECTED);    refer to babelfish_extensions/contrib/babelfishpg_common/sql/numerics.sql
+  ASSERT_EQ(length, LENGTH_EXPECTED);    //refer to babelfish_extensions/contrib/babelfishpg_common/sql/numerics.sql
   //                                        the tinyint created based on smallint type since postgresql does not have
   //                                        tiny int datatype
 
@@ -83,7 +83,7 @@ TEST_F(PSQL_DataTypes_int, Table_Creation) {
                             NULL,
                             (SQLLEN*) &length);
   ASSERT_EQ(rcode, SQL_SUCCESS);
-  // ASSERT_EQ(length, BYTES_EXPECTED);    Bytes same as length problem above
+  ASSERT_EQ(length, BYTES_EXPECTED);    //Bytes same as length problem above
 
   rcode = SQLColAttribute(odbcHandler.GetStatementHandle(),
                           2,
@@ -121,7 +121,7 @@ TEST_F(PSQL_DataTypes_int, Table_Creation) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-TEST_F(PSQL_DataTypes_int, Insertion_Success) {
+TEST_F(PSQL_DataTypes_Tinyint, Insertion_Success) {
 
   const int BYTES_EXPECTED = 1;
 
@@ -196,9 +196,7 @@ TEST_F(PSQL_DataTypes_int, Insertion_Success) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-TEST_F(PSQL_DataTypes_int, Insertion_Fail) {
-
-  const int BYTES_EXPECTED = 1;
+TEST_F(PSQL_DataTypes_Tinyint, Insertion_Fail) {
 
   unsigned char pk;
   unsigned char data;
@@ -209,8 +207,8 @@ TEST_F(PSQL_DataTypes_int, Insertion_Fail) {
   OdbcHandler odbcHandler;
 
   vector <string> invalid_inserted_values = {
-    "-2147483649",
-    "2147483648"
+    "-1",
+    "256"
   };
 
   vector<tuple<int, int, SQLPOINTER, int, SQLLEN* >> bind_columns = {
@@ -238,7 +236,7 @@ TEST_F(PSQL_DataTypes_int, Insertion_Fail) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-TEST_F(PSQL_DataTypes_int, Update_Success) {
+TEST_F(PSQL_DataTypes_Tinyint, Update_Success) {
 
   const string PK_INSERTED = "1";
   const string DATA_INSERTED = "1";
@@ -328,7 +326,7 @@ TEST_F(PSQL_DataTypes_int, Update_Success) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-TEST_F(PSQL_DataTypes_int, Update_Fail) {
+TEST_F(PSQL_DataTypes_Tinyint, Update_Fail) {
 
   const string PK_INSERTED = "1";
   const string DATA_INSERTED = "1";
@@ -401,7 +399,7 @@ TEST_F(PSQL_DataTypes_int, Update_Fail) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-TEST_F(PSQL_DataTypes_int, Arithmetic_Operators) {
+TEST_F(PSQL_DataTypes_Tinyint, Arithmetic_Operators) {
 
   const int BYTES_EXPECTED = 1;
 
@@ -499,7 +497,7 @@ TEST_F(PSQL_DataTypes_int, Arithmetic_Operators) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-TEST_F(PSQL_DataTypes_int, View_Creation) {
+TEST_F(PSQL_DataTypes_Tinyint, View_Creation) {
 
   const string VIEW_QUERY = "SELECT * FROM " + TABLE_NAME;
 
