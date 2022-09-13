@@ -1,6 +1,5 @@
 #include "drivers.h"
 #include <fstream>
-
 using std::pair;
 
 Drivers::Drivers() {
@@ -25,7 +24,6 @@ void Drivers::SetDrivers() {
     string env_db_uid_ = it->second + "_BABEL_DB_USER";
     string env_db_pwd_ = it->second + "_BABEL_DB_PASSWORD";
     string env_db_dbname_ = it->second + "_BABEL_DB_NAME";
-    string env_test_to_run_ = it->second + "_TEST_TO_RUN";
 
     string db_driver_ = getenv(env_db_driver_.c_str()) ? string(getenv(env_db_driver_.c_str())) : 
         config_file_values.find(env_db_driver_) != config_file_values.end() ? config_file_values[env_db_driver_] : "";
@@ -45,12 +43,11 @@ void Drivers::SetDrivers() {
     string db_dbname_ = getenv(env_db_dbname_.c_str()) ? string(getenv(env_db_dbname_.c_str())) :
         config_file_values.find(env_db_dbname_) != config_file_values.end() ? config_file_values[env_db_dbname_] : "";
     
-    string test_to_run_ = getenv(env_test_to_run_.c_str()) ? string(getenv(env_test_to_run_.c_str())) :
-        config_file_values.find(env_test_to_run_) != config_file_values.end() ? config_file_values[env_test_to_run_] : "";
-    
-    ConnectionStringObject cso(db_driver_, db_server_, db_port_, db_uid_, db_pwd_, db_dbname_, test_to_run_);
-    if (test_to_run_ != "")
-      odbc_drivers_.insert(pair<ServerType, ConnectionStringObject>(it->first,cso));
+    if (IsValidConnectionObject(db_driver_, db_server_, db_port_, db_uid_, db_pwd_, db_dbname_)) {
+
+      ConnectionObject co(db_driver_, db_server_, db_port_, db_uid_, db_pwd_, db_dbname_);
+      odbc_drivers_.insert(pair<ServerType, ConnectionObject>(it->first, co));
+    }
   }
   return; 
 
@@ -90,8 +87,14 @@ map<string, string> Drivers::ParseConfigFile() {
     return config_file_values;
 }
 
-map<ServerType, ConnectionStringObject> Drivers::GetOdbcDrivers() {
+bool Drivers::IsValidConnectionObject(string driver, string server, string port, string uid, string pwd, string dbname) {
+  if (driver.empty() || server.empty() || port.empty() || uid.empty() || dbname.empty())
+    return false;
+  return true;
+}
+
+map<ServerType, ConnectionObject> Drivers::PrivGetOdbcDrivers() {
   return odbc_drivers_;
 }
 
-map<ServerType, ConnectionStringObject> Drivers::odbc_drivers_{};
+map<ServerType, ConnectionObject> Drivers::odbc_drivers_{};

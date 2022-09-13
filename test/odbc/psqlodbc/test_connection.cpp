@@ -1,16 +1,20 @@
 #include "../odbc_handler.h"
 #include <gtest/gtest.h>
 #include <sqlext.h>
+#include "../drivers.h"
 
-using std::unique_ptr;
-
-class PSQL_Connection : public testing::Test{
+class PSQL_Connection : public testing::Test {
+  void SetUp() override {
+    map<constants::ServerType, ConnectionObject> available_drivers = Drivers::GetOdbcDrivers();
+    if (available_drivers.find(ServerType::PSQL) == available_drivers.end())
+      GTEST_SKIP() << "PSQL Driver not present: skipping all tests for this fixture.";
+  }
 
 };
 
-TEST_F(PSQL_Connection, SQLDriverConnect_2_SuccessfulConnectionTest) {
-
-  OdbcHandler odbcHandler(ServerType::PSQL);
+TEST_F(PSQL_Connection, SQLDriverConnect_SuccessfulConnectionTest) {
+  
+  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
 
   odbcHandler.AllocateEnvironmentHandle();
   odbcHandler.AllocateConnectionHandle();

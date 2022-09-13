@@ -4,8 +4,8 @@
 #include <sqlext.h>
 #include <gtest/gtest.h>
 
-OdbcHandler::OdbcHandler(ServerType st) {
-  SetConnectionString(st);
+OdbcHandler::OdbcHandler(ConnectionObject &co) {
+  SetConnectionProperties(co);
 }
 
 OdbcHandler::~OdbcHandler() {
@@ -151,18 +151,16 @@ void OdbcHandler::CloseStmt() {
   }
 }
 
-void OdbcHandler::SetConnectionString (ServerType st) {
-  Drivers drivers;
-  ConnectionStringObject cso = drivers.GetOdbcDrivers().find(st)->second;
+void OdbcHandler::SetConnectionProperties(ConnectionObject co) {
 
-  db_driver_ = cso.GetDriver();
-  db_server_ = cso.GetServer();
-  db_port_ = cso.GetPort();
-  db_uid_ = cso.GetUid();
-  db_pwd_ = cso.GetDbname();
-  db_dbname_ = cso.GetDbname();
+  db_driver_ = co.GetDriver();
+  db_server_ = co.GetServer();
+  db_port_ = co.GetPort();
+  db_uid_ = co.GetUid();
+  db_pwd_ = co.GetDbname();
+  db_dbname_ = co.GetDbname();
 
-  connection_string_ = cso.GetConnectionString();
+  connection_string_ = co.GetConnectionString();
   return; 
 }
 

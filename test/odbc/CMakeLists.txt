@@ -23,7 +23,7 @@ add_executable(
 
   main
   constants.cpp
-  connection_string_object.cpp
+  connection_object.cpp
   drivers.cpp
   database_objects.cpp
   odbc_handler.cpp

@@ -10,7 +10,7 @@ class DatabaseObjects {
 
   public:
 
-  DatabaseObjects(ServerType st);
+  DatabaseObjects(ConnectionObject co);
   ~DatabaseObjects();
 
   void CreateSchema(const std::string &schema_name);

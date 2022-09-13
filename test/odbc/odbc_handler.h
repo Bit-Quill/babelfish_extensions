@@ -6,7 +6,7 @@
 #include <tuple>
 #include <vector>
 #include "constants.h"
-#include "connection_string_object.h"
+#include "connection_object.h"
 
 using std::string;
 using std::vector;
@@ -18,13 +18,13 @@ class OdbcHandler {
   public:
 
     // Constructor
-    explicit OdbcHandler(ServerType st);
+    explicit OdbcHandler(ConnectionObject &co);
 
     // Destructor
     ~OdbcHandler();
 
     // Sets the connection string based on server type
-    void SetConnectionString(ServerType st);
+    void SetConnectionProperties(ConnectionObject co);
     
     // Connects to Database
     void Connect(bool allocate_statement_handle = false);
