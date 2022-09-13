@@ -401,7 +401,7 @@ TEST_F(PSQL_DataTypes_int, Update_Fail) {
 TEST_F(PSQL_DataTypes_int, Arithmetic_Operators) {
 
   const int BYTES_EXPECTED = 4;
-
+  const int DOUBLE_BYTES_EXPECTE = 8;
   int pk;
   int data;
   SQLLEN pk_len;
@@ -412,13 +412,13 @@ TEST_F(PSQL_DataTypes_int, Arithmetic_Operators) {
   OdbcHandler odbcHandler;
 
   vector <string> inserted_pk = {
-    "2",
-    "-3"
+    "4",
+    "2"
   };
 
   vector <string> inserted_data = {
-    "4",
-    "2"
+    "3",
+    "5"
   };
 
   vector <string> operations_query = {
@@ -430,6 +430,11 @@ TEST_F(PSQL_DataTypes_int, Arithmetic_Operators) {
     "POWER(" + COL1_NAME+","+COL2_NAME + ")"
   };
 
+  vector <string> double_operations_query= {
+    "LOG(" + COL1_NAME + ")"
+  };
+
+  vector<vector<double>>double_expected_results = {{},{}};
   vector<vector<long int>>expected_results = {{},{}};
 
   // initialization of expected_results
@@ -442,14 +447,26 @@ TEST_F(PSQL_DataTypes_int, Arithmetic_Operators) {
     expected_results[i].push_back(pow(StringToInt4(inserted_pk[i]),StringToInt4(inserted_data[i])));
   }
 
+  for (int i = 0; i < inserted_pk.size(); i++) {
+    double_expected_results[i].push_back(log10(StringToInt4(inserted_pk[i])));
+    // std::cout <<double_expected_results[i][0]<<'\n';
+  }
+
+  double double_col_results[double_operations_query.size()];
   int col_results[operations_query.size()];
   SQLLEN col_len[operations_query.size()];
+  SQLLEN double_col_len[double_operations_query.size()];
   vector<tuple<int, int, SQLPOINTER, int, SQLLEN* >> bind_columns = {};
+  vector<tuple<int, int, SQLPOINTER, int, SQLLEN* >> double_bind_columns = {};
 
   // initialization for bind_columns
   for (int i = 0; i < operations_query.size(); i++) {
     tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_SLONG, (SQLPOINTER) &col_results[i], 0, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
+  }
+  for (int i = 0; i < double_operations_query.size(); i++) {
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_DOUBLE, (SQLPOINTER) &double_col_results[i], 0, &double_col_len[i]);
+    double_bind_columns.push_back(tuple_to_insert);
   }
 
   string insert_string{}; 
@@ -489,7 +506,23 @@ TEST_F(PSQL_DataTypes_int, Arithmetic_Operators) {
 
       ASSERT_EQ(col_len[j], BYTES_EXPECTED);
       ASSERT_EQ(col_results[j], expected_results[i][j]);
-      std::cout<<"Expected Result: "<< expected_results[i][j]<<'\n';
+      // std::cout<<"Expected Result: "<< expected_results[i][j]<<'\n';
+    }
+  }
+  for (int i = 0; i < inserted_data.size(); ++i) {
+    
+    odbcHandler.CloseStmt();
+    odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, double_operations_query, vector<string> {}, COL1_NAME + "=" + inserted_pk[i]));
+    ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(double_bind_columns));
+
+    rcode = SQLFetch(odbcHandler.GetStatementHandle());
+    ASSERT_EQ(rcode, SQL_SUCCESS);
+
+    for (int j = 0; j < double_operations_query.size(); j++) {
+
+      ASSERT_EQ(double_col_len[j], DOUBLE_BYTES_EXPECTE);
+      ASSERT_EQ(double_col_results[j], double_expected_results[i][j]);
+      // std::cout<<"Expected Result: "<< double_expected_results[i][j]<<'\n';
     }
   }
 
