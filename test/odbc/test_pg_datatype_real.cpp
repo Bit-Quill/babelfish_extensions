@@ -193,7 +193,7 @@ TEST_F(PSQL_DataTypes_Real, Insertion_Fail) {
 
   vector <string> invalid_inserted_values = {
     "1E+39", // 1E+38 is valid..?
-    "1E-46", // 1E-46 is valid..?
+    "1E-46", // 1E-45 is valid..?
     "999999999999999999999999999999999999999"
   };
 
@@ -474,6 +474,98 @@ TEST_F(PSQL_DataTypes_Real, Arithmetic_Operators) {
       ASSERT_EQ(col_len[j], BYTES_EXPECTED);
       ASSERT_EQ(col_results[j], expected_results[i][j]);
     }
+  }
+
+  // Assert that there is no more data
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_NO_DATA);
+
+  odbcHandler.CloseStmt();
+  odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
+}
+
+TEST_F(PSQL_DataTypes_Real, Arithmetic_Functions) {
+  const int BYTES_EXPECTED = 4;
+
+  float pk;
+  float data;
+  SQLLEN pk_len;
+  SQLLEN data_len;
+  SQLLEN affected_rows;
+
+  RETCODE rcode;
+  OdbcHandler odbcHandler;
+
+  vector <string> inserted_pk = {
+    "-0.123456",
+    "0.123456789",
+    "1E+3"
+  };
+
+  vector <string> inserted_data = {
+    "4",
+    "9",
+    "10.0"
+  };
+
+  vector <string> operations_query = {
+    "MIN(" + COL1_NAME + ")",
+    "MAX(" + COL1_NAME + ")",
+  };
+
+  // initialization of expected_results
+  vector<float>expected_results = {};
+  float min_expected, max_expected = 0;
+  for (int i = 0; i < inserted_pk.size(); i++) {
+    float curr = StringToFloat(inserted_pk[i]);
+    min_expected = std::min(min_expected, curr);
+    max_expected = std::max(max_expected, curr);
+  }
+  expected_results.push_back(min_expected);
+  expected_results.push_back(max_expected);
+
+  float col_results[operations_query.size()];
+  SQLLEN col_len[operations_query.size()];
+  vector<tuple<int, int, SQLPOINTER, int, SQLLEN* >> bind_columns = {};
+
+  // initialization for bind_columns
+  for (int i = 0; i < operations_query.size(); i++) {
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i + 1, SQL_C_FLOAT, (SQLPOINTER) &col_results[i], 0, &col_len[i]);
+    bind_columns.push_back(tuple_to_insert);
+  }
+
+  string insert_string{}; 
+  string comma{};
+  
+  // insert_string initialization
+  for (int i = 0; i < inserted_data.size(); i++) {
+    insert_string += comma + "(" + inserted_pk[i] + "," + inserted_data[i] + ")";
+    comma = ",";
+  }
+
+  // Create table
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
+  odbcHandler.CloseStmt();
+
+  // Insert valid values into the table and assert affected rows
+  odbcHandler.ExecQuery(InsertStatement(TABLE_NAME, insert_string));
+ 
+  rcode = SQLRowCount(odbcHandler.GetStatementHandle(), &affected_rows);
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+  ASSERT_EQ(affected_rows, inserted_data.size());
+
+  // Make sure inserted values are correct and operations
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(bind_columns));
+
+  odbcHandler.CloseStmt();
+  odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, operations_query, vector<string> {}));
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(bind_columns));
+
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+  for (int i = 0; i < operations_query.size(); i++) {    
+    ASSERT_EQ(col_len[i], BYTES_EXPECTED);
+    ASSERT_EQ(col_results[i], expected_results[i]);
   }
 
   // Assert that there is no more data
