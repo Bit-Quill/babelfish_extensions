@@ -1,7 +1,7 @@
-#include "../odbc_handler.h"
+#include "../src/odbc_handler.h"
 #include <gtest/gtest.h>
 #include <sqlext.h>
-#include "../drivers.h"
+#include "../src/drivers.h"
 
 class PSQL_Connection : public testing::Test {
   void SetUp() override {

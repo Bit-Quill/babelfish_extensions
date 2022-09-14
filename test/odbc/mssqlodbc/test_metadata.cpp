@@ -1,7 +1,7 @@
-#include "../odbc_handler.h"
-#include "../database_objects.h"
-#include "../query_generator.h"
-#include "../drivers.h"
+#include "../src/odbc_handler.h"
+#include "../src/database_objects.h"
+#include "../src/query_generator.h"
+#include "../src/drivers.h"
 
 #include <gtest/gtest.h>
 #include <sqlext.h>
