@@ -2,15 +2,13 @@
 #define DATABASE_OBJECTS_H
 
 #include "odbc_handler.h"
-#include "constants.h"
-
-using namespace constants; 
 
 class DatabaseObjects {
 
   public:
 
   DatabaseObjects(ConnectionObject co);
+  
   ~DatabaseObjects();
 
   void CreateSchema(const std::string &schema_name);
@@ -50,4 +48,3 @@ class DatabaseObjects {
 };
 
 #endif
-

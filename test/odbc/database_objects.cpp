@@ -78,4 +78,3 @@ void DatabaseObjects::DropObjects(const string &object_kind, const vector<string
     DropObject(object_kind, *it); 
   }
 }
-

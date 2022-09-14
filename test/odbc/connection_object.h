@@ -5,34 +5,33 @@
 
 using std::string;
 
-
 class ConnectionObject {
 
   public:
 
-  ConnectionObject(string driver, string server, string port, string uid, string pwd, string dbname);
-  ~ConnectionObject();
+    ConnectionObject(string driver, string server, string port, string uid, string pwd, string dbname);
+    ~ConnectionObject();
 
-  // Returns the connection string 
-  string GetConnectionString();
+    // Returns the connection string 
+    string GetConnectionString();
 
-  // Returns the driver name
-  string GetDriver();
+    // Returns the driver name
+    string GetDriver();
 
-  // Returns the server name
-  string GetServer();
+    // Returns the server name
+    string GetServer();
 
-  // Returns the port
-  string GetPort();
+    // Returns the port
+    string GetPort();
 
-  // Returns the username/uid used for database login
-  string GetUid();
+    // Returns the username/uid used for database login
+    string GetUid();
 
-  // Returns the password used for database login
-  string GetPwd();
+    // Returns the password used for database login
+    string GetPwd();
 
-  // Returns the database used
-  string GetDbname();
+    // Returns the database used
+    string GetDbname();
 
   private:
     
@@ -48,4 +47,3 @@ class ConnectionObject {
 };
 
 #endif
-

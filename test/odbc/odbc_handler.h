@@ -128,4 +128,3 @@ class OdbcHandler {
 };
 
 #endif
-

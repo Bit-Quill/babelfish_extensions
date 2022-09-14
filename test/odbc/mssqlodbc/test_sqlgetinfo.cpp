@@ -5,11 +5,14 @@
 
 static const int BUFFER = 255;
 
-class MSSQL_SQLGetInfoTest : public testing::Test{
+class MSSQL_SQLGetInfoTest : public testing::Test {
   void SetUp() override {
+    
     map<constants::ServerType, ConnectionObject> available_drivers = Drivers::GetOdbcDrivers();
-    if (available_drivers.find(ServerType::MSSQL) == available_drivers.end())
+    
+    if (available_drivers.find(ServerType::MSSQL) == available_drivers.end()) {
       GTEST_SKIP() << "MSSQL Driver not present: skipping all tests for this fixture.";
+    }
   }
 };
 

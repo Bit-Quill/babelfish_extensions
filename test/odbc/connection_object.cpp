@@ -1,5 +1,4 @@
 #include "connection_object.h"
-#include "odbc_handler.h"
 
 ConnectionObject::ConnectionObject(string driver, string server, string port, string uid, string pwd, string dbname) {
     db_driver_ = driver;

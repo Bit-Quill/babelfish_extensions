@@ -1,5 +1,3 @@
-
-#include "drivers.h"
 #include "odbc_handler.h"
 #include <sqlext.h>
 #include <gtest/gtest.h>
@@ -161,7 +159,6 @@ void OdbcHandler::SetConnectionProperties(ConnectionObject co) {
   db_dbname_ = co.GetDbname();
 
   connection_string_ = co.GetConnectionString();
-  return; 
 }
 
 void OdbcHandler::AssertSqlSuccess(RETCODE retcode, const string& error_msg) {

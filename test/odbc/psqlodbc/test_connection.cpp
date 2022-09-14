@@ -5,9 +5,12 @@
 
 class PSQL_Connection : public testing::Test {
   void SetUp() override {
+    
     map<constants::ServerType, ConnectionObject> available_drivers = Drivers::GetOdbcDrivers();
-    if (available_drivers.find(ServerType::PSQL) == available_drivers.end())
+
+    if (available_drivers.find(ServerType::PSQL) == available_drivers.end()) {
       GTEST_SKIP() << "PSQL Driver not present: skipping all tests for this fixture.";
+    }
   }
 
 };
