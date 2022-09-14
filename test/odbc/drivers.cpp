@@ -69,7 +69,7 @@ map<string, string> Drivers::ParseConfigFile() {
     size_t index = line.find("=");
 
     if (index == string::npos || index == (line.length() - 1)) {
-        // an empty line
+      // an empty line
       continue;
     }
 
