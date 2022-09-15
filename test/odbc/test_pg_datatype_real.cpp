@@ -511,18 +511,24 @@ TEST_F(PSQL_DataTypes_Real, Arithmetic_Functions) {
   vector <string> operations_query = {
     "MIN(" + COL1_NAME + ")",
     "MAX(" + COL1_NAME + ")",
+    "SUM(" + COL1_NAME + ")",
+    "AVG(" + COL1_NAME + ")"
   };
 
   // initialization of expected_results
   vector<float>expected_results = {};
-  float min_expected, max_expected = 0;
+  float min_expected, max_expected, sum_expected, avg_expected = 0;
   for (int i = 0; i < inserted_pk.size(); i++) {
     float curr = StringToFloat(inserted_pk[i]);
     min_expected = std::min(min_expected, curr);
     max_expected = std::max(max_expected, curr);
+    sum_expected += curr;
   }
+  avg_expected = sum_expected / inserted_pk.size();
   expected_results.push_back(min_expected);
   expected_results.push_back(max_expected);
+  expected_results.push_back(sum_expected);
+  expected_results.push_back(avg_expected);
 
   float col_results[operations_query.size()];
   SQLLEN col_len[operations_query.size()];
