@@ -1,6 +1,7 @@
-#include "../odbc_handler.h"
-#include "../database_objects.h"
-#include "../query_generator.h"
+#include "../src/drivers.h"
+#include "../src/odbc_handler.h"
+#include "../src/database_objects.h"
+#include "../src/query_generator.h"
 
 #include <gtest/gtest.h>
 #include <sqlext.h>
@@ -22,12 +23,12 @@ vector<pair<string, string>> TABLE_COLUMNS = {
 
 class PSQL_Datatypes_Datetime: public testing::Test {
    void SetUp() override {
-    OdbcHandler test_setup(ServerType::PSQL);
+    OdbcHandler test_setup(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
     test_setup.ConnectAndExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
    }
 
    void TearDown() override {
-    OdbcHandler test_cleanup(ServerType::PSQL);
+    OdbcHandler test_cleanup(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
     test_cleanup.ConnectAndExecQuery(DropObjectStatement("VIEW", VIEW_NAME));
     test_cleanup.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
    }
@@ -72,7 +73,7 @@ TEST_F(PSQL_Datatypes_Datetime, Table_Creation) {
   SQLLEN scale;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(ServerType::PSQL);
+  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
 
   // Create a table with columns defined with the specific datatype being tested. 
 
@@ -137,7 +138,7 @@ TEST_F(PSQL_Datatypes_Datetime, DISABLED_Table_Create_Fail) {
   };
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(ServerType::PSQL);
+  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
 
   // Create a table with columns defined with the specific datatype being tested. 
   odbcHandler.Connect();
@@ -166,7 +167,7 @@ TEST_F(PSQL_Datatypes_Datetime, Insertion_Success) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(ServerType::PSQL);
+  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {"1", "NULL"}, // NULL values
@@ -245,7 +246,7 @@ TEST_F(PSQL_Datatypes_Datetime, Insertion_Failure) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(ServerType::PSQL);
+  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {"1", "1752-01-01 00:00:000" }, // past lowest boundary
@@ -303,7 +304,7 @@ TEST_F(PSQL_Datatypes_Datetime, Update_Success) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(ServerType::PSQL);
+  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {PK_VAL, "2011-04-15 16:44:09"} 
@@ -410,7 +411,7 @@ TEST_F(PSQL_Datatypes_Datetime, Update_Fail) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(ServerType::PSQL);
+  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {PK_VAL, "2011-04-15 16:44:09"} 
@@ -509,7 +510,7 @@ TEST_F(PSQL_Datatypes_Datetime, View_creation) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(ServerType::PSQL);
+  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {"1", "NULL"}, // NULL values
@@ -584,4 +585,415 @@ TEST_F(PSQL_Datatypes_Datetime, View_creation) {
 
   odbcHandler.CloseStmt();
   odbcHandler.ExecQuery(DropObjectStatement("VIEW", VIEW_NAME));
+}
+
+TEST_F(PSQL_Datatypes_Datetime, Table_Single_Primary_Keys) {
+
+  const vector<pair<string, string>> TABLE_COLUMNS = {
+    {COL_NAMES[0], "INT"},
+    {COL_NAMES[1], DATATYPE}
+  };
+  const string PKTABLE_NAME = TABLE_NAME.substr(TABLE_NAME.find('.') + 1, TABLE_NAME.length());
+  const string SCHEMA_NAME = TABLE_NAME.substr(0, TABLE_NAME.find('.'));
+
+  const vector<string> PK_COLUMNS = {
+    COL_NAMES[1]
+  };
+
+  string table_constraints{"PRIMARY KEY ("};
+  string comma{};
+  for (int i = 0; i < PK_COLUMNS.size(); i++) {
+    table_constraints += comma + PK_COLUMNS[i];
+    comma = ",";
+  }
+  table_constraints += ")";
+
+  const int PK_BYTES_EXPECTED = 4;
+  const int DATA_BYTES_EXPECTED = 1;
+
+  int pk;
+  unsigned char data;
+  SQLLEN pk_len;
+  SQLLEN data_len;
+  SQLLEN affected_rows;
+
+  RETCODE rcode;
+  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS, table_constraints));
+  odbcHandler.CloseStmt();
+
+  // Check if composite key still matches after creation
+  const int CHARSIZE = 255;
+  char table_name[CHARSIZE];
+  char column_name[CHARSIZE];
+  int key_sq{};
+  char pk_name[CHARSIZE];
+
+  vector<tuple<int, int, SQLPOINTER, int>> constraints_bind_columns = {
+    {3, SQL_C_CHAR, table_name, CHARSIZE},
+    {4, SQL_C_CHAR, column_name, CHARSIZE},
+    {5, SQL_C_ULONG, &key_sq, CHARSIZE},
+    {6, SQL_C_CHAR, pk_name, CHARSIZE}
+  };
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(constraints_bind_columns));
+
+  rcode = SQLPrimaryKeys(odbcHandler.GetStatementHandle(), NULL, 0, (SQLCHAR*) SCHEMA_NAME.c_str(), SQL_NTS, (SQLCHAR*) PKTABLE_NAME.c_str(), SQL_NTS);
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+
+  int curr_sq {0};
+  for (auto columnName : PK_COLUMNS) {
+    ++curr_sq;
+    rcode = SQLFetch(odbcHandler.GetStatementHandle());
+    ASSERT_EQ(rcode, SQL_SUCCESS);
+
+    ASSERT_EQ(string(table_name), PKTABLE_NAME);
+    ASSERT_EQ(string(column_name), columnName);
+    ASSERT_EQ(key_sq, curr_sq);
+  }
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_NO_DATA);
+  odbcHandler.CloseStmt();
+
+  // Insert valid values into the table and assert affected rows
+
+  vector<vector<string>> inserted_values = {
+    {"1", "1753-01-01 00:00:000" }, // smallest value
+    {"2", "2011-04-15 16:44:09.000"}, // random regular values
+    {"3", "9999-12-31 23:59:59.997"}, // max value
+    {"4", ""} // blank value
+  };
+
+  vector<vector<string>> expected = {
+    {"1", "1753-01-01 00:00:00" }, // smallest value
+    {"2", "2011-04-15 16:44:09"}, // random regular value
+    {"3", "9999-12-31 23:59:59.997"}, // max value
+    {"4", "1900-01-01 00:00:00"} // blank value
+  };
+
+  const int BUFFER_LENGTH = 8192;
+
+  char col_results[NUM_COLS][BUFFER_LENGTH];
+  SQLLEN col_len[NUM_COLS];
+
+  vector<tuple<int, int, SQLPOINTER, int, SQLLEN* >> bind_columns{};
+
+  // initialize bind_columns
+  for (int i = 0; i < NUM_COLS; i++) {
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    bind_columns.push_back(tuple_to_insert);
+  }
+
+  string insert_string = InitializeInsertString(inserted_values);
+
+  odbcHandler.ExecQuery(InsertStatement(TABLE_NAME, insert_string));
+
+  rcode = SQLRowCount(odbcHandler.GetStatementHandle(), &affected_rows);
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+  ASSERT_EQ(affected_rows, inserted_values.size());
+
+  odbcHandler.CloseStmt();
+
+  // Select all from the tables and assert that the following attributes of the type is correct
+  odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, {"*"}, vector<string> {COL_NAMES[0]}));
+
+  // Make sure inserted values are correct
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(bind_columns));
+
+  for (int i = 0; i < inserted_values.size(); ++i) {
+
+    rcode = SQLFetch(odbcHandler.GetStatementHandle()); // retrieve row-by-row
+    ASSERT_EQ(rcode, SQL_SUCCESS);
+
+    for (int j = 1; j < NUM_COLS; j++) {
+      if (inserted_values[i][j] != "NULL") {
+        ASSERT_EQ(string(col_results[j]), expected[i][j]);
+        ASSERT_EQ(col_len[j], expected[i][j].size());
+      } 
+      else 
+        ASSERT_EQ(col_len[j], SQL_NULL_DATA);
+    }
+  }
+
+  odbcHandler.CloseStmt();
+
+  // Attempt to insert duplicate values that violates composite constraint and assert that they all fail
+  insert_string.append(",");
+  insert_string = insert_string.append(insert_string);
+
+  rcode = SQLExecDirect(odbcHandler.GetStatementHandle(), (SQLCHAR*) InsertStatement(TABLE_NAME, insert_string).c_str(), SQL_NTS);
+  ASSERT_EQ(rcode, SQL_ERROR);
+
+  odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
+}
+
+TEST_F(PSQL_Datatypes_Datetime, Table_Composite_Primary_Keys) {
+  const vector<pair<string, string>> TABLE_COLUMNS = {
+    {COL_NAMES[0], "INT"},
+    {COL_NAMES[1], DATATYPE}
+  };
+  const string PKTABLE_NAME = TABLE_NAME.substr(TABLE_NAME.find('.') + 1, TABLE_NAME.length());
+  const string SCHEMA_NAME = TABLE_NAME.substr(0, TABLE_NAME.find('.'));
+
+  const vector<string> PK_COLUMNS = {
+    COL_NAMES[0], 
+    COL_NAMES[1]
+  };
+
+  string table_constraints{"PRIMARY KEY ("};
+  string comma{};
+  for (int i = 0; i < PK_COLUMNS.size(); i++) {
+    table_constraints += comma + PK_COLUMNS[i];
+    comma = ",";
+  }
+  table_constraints += ")";
+
+  const int PK_BYTES_EXPECTED = 4;
+  const int DATA_BYTES_EXPECTED = 1;
+
+  int pk;
+  unsigned char data;
+  SQLLEN pk_len;
+  SQLLEN data_len;
+  SQLLEN affected_rows;
+
+  RETCODE rcode;
+  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS, table_constraints));
+  odbcHandler.CloseStmt();
+
+  // Check if composite key still matches after creation
+  const int CHARSIZE = 255;
+  char table_name[CHARSIZE];
+  char column_name[CHARSIZE];
+  int key_sq{};
+  char pk_name[CHARSIZE];
+
+  vector<tuple<int, int, SQLPOINTER, int>> constraints_bind_columns = {
+    {3, SQL_C_CHAR, table_name, CHARSIZE},
+    {4, SQL_C_CHAR, column_name, CHARSIZE},
+    {5, SQL_C_ULONG, &key_sq, CHARSIZE},
+    {6, SQL_C_CHAR, pk_name, CHARSIZE}
+  };
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(constraints_bind_columns));
+
+  rcode = SQLPrimaryKeys(odbcHandler.GetStatementHandle(), NULL, 0, (SQLCHAR*) SCHEMA_NAME.c_str(), SQL_NTS, (SQLCHAR*) PKTABLE_NAME.c_str(), SQL_NTS);
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+
+  int curr_sq {0};
+  for (auto columnName : PK_COLUMNS) {
+    ++curr_sq;
+    rcode = SQLFetch(odbcHandler.GetStatementHandle());
+    ASSERT_EQ(rcode, SQL_SUCCESS);
+
+    ASSERT_EQ(string(table_name), PKTABLE_NAME);
+    ASSERT_EQ(string(column_name), columnName);
+    ASSERT_EQ(key_sq, curr_sq);
+  }
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_NO_DATA);
+  odbcHandler.CloseStmt();
+
+  // Insert valid values into the table and assert affected rows
+
+  vector<vector<string>> inserted_values = {
+    {"1", "1753-01-01 00:00:000" }, // smallest value
+    {"2", "2011-04-15 16:44:09.000"}, // random regular values
+    {"3", "9999-12-31 23:59:59.997"}, // max value
+    {"4", ""} // blank value
+  };
+
+  vector<vector<string>> expected = {
+    {"1", "1753-01-01 00:00:00" }, // smallest value
+    {"2", "2011-04-15 16:44:09"}, // random regular value
+    {"3", "9999-12-31 23:59:59.997"}, // max value
+    {"4", "1900-01-01 00:00:00"} // blank value
+  };
+
+  const int BUFFER_LENGTH = 8192;
+
+  char col_results[NUM_COLS][BUFFER_LENGTH];
+  SQLLEN col_len[NUM_COLS];
+
+  vector<tuple<int, int, SQLPOINTER, int, SQLLEN* >> bind_columns{};
+
+  // initialize bind_columns
+  for (int i = 0; i < NUM_COLS; i++) {
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    bind_columns.push_back(tuple_to_insert);
+  }
+
+  string insert_string = InitializeInsertString(inserted_values);
+
+  odbcHandler.ExecQuery(InsertStatement(TABLE_NAME, insert_string));
+
+  rcode = SQLRowCount(odbcHandler.GetStatementHandle(), &affected_rows);
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+  ASSERT_EQ(affected_rows, inserted_values.size());
+
+  odbcHandler.CloseStmt();
+
+  // Select all from the tables and assert that the following attributes of the type is correct
+  odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, {"*"}, vector<string> {COL_NAMES[0]}));
+
+  // Make sure inserted values are correct
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(bind_columns));
+
+  for (int i = 0; i < inserted_values.size(); ++i) {
+
+    rcode = SQLFetch(odbcHandler.GetStatementHandle()); // retrieve row-by-row
+    ASSERT_EQ(rcode, SQL_SUCCESS);
+
+    for (int j = 1; j < NUM_COLS; j++) {
+      if (inserted_values[i][j] != "NULL") {
+        ASSERT_EQ(string(col_results[j]), expected[i][j]);
+        ASSERT_EQ(col_len[j], expected[i][j].size());
+      } 
+      else 
+        ASSERT_EQ(col_len[j], SQL_NULL_DATA);
+    }
+  }
+
+  odbcHandler.CloseStmt();
+
+  // Attempt to insert duplicate values that violates composite constraint and assert that they all fail
+  insert_string.append(",");
+  insert_string = insert_string.append(insert_string);
+
+  rcode = SQLExecDirect(odbcHandler.GetStatementHandle(), (SQLCHAR*) InsertStatement(TABLE_NAME, insert_string).c_str(), SQL_NTS);
+  ASSERT_EQ(rcode, SQL_ERROR);
+
+  odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
+}
+
+TEST_F(PSQL_Datatypes_Datetime, Table_Unique_Constraint) {
+  const vector<pair<string, string>> TABLE_COLUMNS = {
+    {COL_NAMES[0], "INT"},
+    {COL_NAMES[1], DATATYPE}
+  };
+  const string PKTABLE_NAME = TABLE_NAME.substr(TABLE_NAME.find('.') + 1, TABLE_NAME.length());
+  const string SCHEMA_NAME = TABLE_NAME.substr(0, TABLE_NAME.find('.'));
+
+  const vector<string> UNIQUE_COLUMNS = {
+    COL_NAMES[1]
+  };
+
+  const string UNIQUE_COLUMN_NAME = COL_NAMES[1];
+
+  string table_constraints{"UNIQUE("};
+  string comma{};
+  for (int i = 0; i < UNIQUE_COLUMNS.size(); i++) {
+    table_constraints += comma + UNIQUE_COLUMNS[i];
+    comma = ",";
+  }
+  table_constraints += ")";
+
+  const int PK_BYTES_EXPECTED = 4;
+  const int DATA_BYTES_EXPECTED = 1;
+
+  int pk;
+  unsigned char data;
+  SQLLEN pk_len;
+  SQLLEN data_len;
+  SQLLEN affected_rows;
+
+  const int CHARSIZE = 255;
+  char column_name[CHARSIZE];
+
+  RETCODE rcode;
+  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS, table_constraints));
+  odbcHandler.CloseStmt();
+
+  vector<tuple<int, int, SQLPOINTER, int>> constraints_bind_columns = {
+    {1, SQL_C_CHAR, column_name, CHARSIZE}
+  };
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(constraints_bind_columns));
+
+  const string UNIQUE_QUERY = 
+    "SELECT C.COLUMN_NAME FROM "
+    "INFORMATION_SCHEMA.TABLE_CONSTRAINTS T "
+    "JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE C "
+    "ON C.CONSTRAINT_NAME=T.CONSTRAINT_NAME "
+    "WHERE "
+    "C.TABLE_NAME='" + TABLE_NAME.substr(TABLE_NAME.find('.') + 1, TABLE_NAME.length()) + "' "
+    "AND T.CONSTRAINT_TYPE='UNIQUE'";
+  
+  odbcHandler.ExecQuery(UNIQUE_QUERY);
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+  ASSERT_EQ(string(column_name), UNIQUE_COLUMN_NAME);
+  odbcHandler.CloseStmt();
+
+  // Insert valid values into the table and assert affected rows
+  vector<vector<string>> inserted_values = {
+    {"1", "1753-01-01 00:00:000" }, // smallest value
+    {"2", "2011-04-15 16:44:09.000"}, // random regular values
+    {"3", "9999-12-31 23:59:59.997"}, // max value
+    {"4", ""} // blank value
+  };
+
+  vector<vector<string>> expected = {
+    {"1", "1753-01-01 00:00:00" }, // smallest value
+    {"2", "2011-04-15 16:44:09"}, // random regular value
+    {"3", "9999-12-31 23:59:59.997"}, // max value
+    {"4", "1900-01-01 00:00:00"} // blank value
+  };
+
+  const int BUFFER_LENGTH = 8192;
+
+  char col_results[NUM_COLS][BUFFER_LENGTH];
+  SQLLEN col_len[NUM_COLS];
+
+  vector<tuple<int, int, SQLPOINTER, int, SQLLEN* >> bind_columns{};
+
+  // initialize bind_columns
+  for (int i = 0; i < NUM_COLS; i++) {
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    bind_columns.push_back(tuple_to_insert);
+  }
+
+  string insert_string = InitializeInsertString(inserted_values);
+
+  odbcHandler.ExecQuery(InsertStatement(TABLE_NAME, insert_string));
+
+  rcode = SQLRowCount(odbcHandler.GetStatementHandle(), &affected_rows);
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+  ASSERT_EQ(affected_rows, inserted_values.size());
+
+  odbcHandler.CloseStmt();
+
+  // Select all from the tables and assert that the following attributes of the type is correct:
+  odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, {"*"}, vector<string> {COL_NAMES[0]}));
+
+  // Make sure inserted values are correct
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(bind_columns));
+
+  for (int i = 0; i < inserted_values.size(); ++i) {
+
+    rcode = SQLFetch(odbcHandler.GetStatementHandle()); // retrieve row-by-row
+    ASSERT_EQ(rcode, SQL_SUCCESS);
+
+    for (int j = 1; j < NUM_COLS; j++) {
+      if (inserted_values[i][j] != "NULL") {
+        ASSERT_EQ(string(col_results[j]), expected[i][j]);
+        ASSERT_EQ(col_len[j], expected[i][j].size());
+      } 
+      else 
+        ASSERT_EQ(col_len[j], SQL_NULL_DATA);
+    }
+  }
+
+  odbcHandler.CloseStmt();
+
+  // Attempt to insert duplicate values that violates composite constraint and assert that they all fail
+  insert_string.append(",");
+  insert_string = insert_string.append(insert_string);
+
+  rcode = SQLExecDirect(odbcHandler.GetStatementHandle(), (SQLCHAR*) InsertStatement(TABLE_NAME, insert_string).c_str(), SQL_NTS);
+  ASSERT_EQ(rcode, SQL_ERROR);
+
+  odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
