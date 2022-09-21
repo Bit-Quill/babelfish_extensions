@@ -7,7 +7,7 @@ class DatabaseObjects {
 
   public:
 
-  DatabaseObjects(ConnectionObject co);
+  DatabaseObjects(ConnectionObject &co);
   
   ~DatabaseObjects();
 

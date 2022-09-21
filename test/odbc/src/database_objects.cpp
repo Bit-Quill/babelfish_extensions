@@ -5,7 +5,7 @@ using std::string;
 using std::vector;
 using std::pair;
 
-DatabaseObjects::DatabaseObjects(ConnectionObject co) 
+DatabaseObjects::DatabaseObjects(ConnectionObject &co) 
   : odbcHandler(co) 
 {
     odbcHandler.Connect(true);
