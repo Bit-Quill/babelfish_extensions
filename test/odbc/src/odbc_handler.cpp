@@ -149,7 +149,7 @@ void OdbcHandler::CloseStmt() {
   }
 }
 
-void OdbcHandler::SetConnectionProperties(ConnectionObject co) {
+void OdbcHandler::SetConnectionProperties(ConnectionObject &co) {
 
   db_driver_ = co.GetDriver();
   db_server_ = co.GetServer();

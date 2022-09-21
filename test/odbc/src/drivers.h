@@ -10,29 +10,36 @@ class Drivers {
 
   public:
 
-    static map<ServerType, ConnectionObject> GetOdbcDrivers() {
-      static Drivers singleton;
-      return singleton.PrivGetOdbcDrivers();
+    static bool DriverExists(ServerType st) {
+      if (odbc_drivers_.empty()) {
+          SetDrivers();
+      }
+      return odbc_drivers_.find(st) != odbc_drivers_.end();
     }
 
-  private:
-  
-    // Constructor
-    Drivers();
+    static ConnectionObject& GetDriver(ServerType st) {
+      if (odbc_drivers_.empty()) {
+          SetDrivers();
+      }
+      return odbc_drivers_.at(st);
+    }
 
-    // Destructor
-    ~Drivers();
+      // Constructor
+      Drivers();
 
-    void SetDrivers();
+      // Destructor
+      ~Drivers();
 
-    map<ServerType, ConnectionObject> PrivGetOdbcDrivers();
+    private:
 
-    static map<ServerType, ConnectionObject> odbc_drivers_;
+      static void SetDrivers();
 
-    // Goes through config.txt and returns a map with values from the configuration file
-    map<string, string> ParseConfigFile();
+      static map<ServerType, ConnectionObject> odbc_drivers_;
 
-    // Checks if given connection string parameters forms a valid connection object
-    bool IsValidConnectionObject(string driver, string server, string port, string uid, string pwd, string dbname);
+      // Goes through config.txt and returns a map with values from the configuration file
+      static map<string, string> ParseConfigFile();
+
+      // Checks if given connection string parameters forms a valid connection object
+      static bool IsValidConnectionObject(string driver, string server, string port, string uid, string pwd, string dbname);
 };
 #endif

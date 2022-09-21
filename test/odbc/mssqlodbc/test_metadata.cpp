@@ -18,10 +18,7 @@ using std::tuple;
 class MSSQL_Metadata: public testing::Test {
 
   void SetUp() override {
-    
-    map<constants::ServerType, ConnectionObject> available_drivers = Drivers::GetOdbcDrivers();
-    
-    if (available_drivers.find(ServerType::MSSQL) == available_drivers.end()) {
+    if(!Drivers::DriverExists(ServerType::MSSQL)) {
       GTEST_SKIP() << "MSSQL Driver not present: skipping all tests for this fixture.";
     }
   }
@@ -29,7 +26,7 @@ class MSSQL_Metadata: public testing::Test {
 
 void GetCurrentUser(char* current_user, const int CHARSIZE) {
 
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
   RETCODE rcode;
 
   odbcHandler.ConnectAndExecQuery("SELECT CURRENT_USER");
@@ -67,7 +64,7 @@ void SQLPrimaryKeysTestCommon(const string &pktable_name,
   const string &constraint_name,
   const vector<string> &pk_columns) {
 
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
   RETCODE rcode;
   
   const int CHARSIZE = 255;
@@ -83,7 +80,7 @@ void SQLPrimaryKeysTestCommon(const string &pktable_name,
     {6, SQL_C_CHAR, pk_name, CHARSIZE}
   };
   
-  DatabaseObjects dbObjects(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  DatabaseObjects dbObjects(Drivers::GetDriver(ServerType::MSSQL));
   ASSERT_NO_FATAL_FAILURE(dbObjects.CreateTable(pktable_name, table_columns, PrimaryKeyConstraintSpec(constraint_name, pk_columns)));
   ASSERT_NO_FATAL_FAILURE(odbcHandler.Connect(true));
   
@@ -113,7 +110,7 @@ void SQLPrimaryKeysTestCommon(const string &pktable_name,
 // primary key table (the referenced table) or the foreign key table (the referencing table).
 void SQLForeignKeysTestCommon(bool refer_pk_table) {
 
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
   RETCODE rcode;
   const int CHARSIZE = 255;
   char pk_table[CHARSIZE];
@@ -157,7 +154,7 @@ void SQLForeignKeysTestCommon(bool refer_pk_table) {
     {13, SQL_C_CHAR, pk_name, CHARSIZE}
   };
 
-  DatabaseObjects dbObjects(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  DatabaseObjects dbObjects(Drivers::GetDriver(ServerType::MSSQL));
   ASSERT_NO_FATAL_FAILURE(dbObjects.DropObject("TABLE",FK_TABLE_FOREIGN)); // this is in case things were not cleaned up properly previously, e.g. connection lost, etc.
   ASSERT_NO_FATAL_FAILURE(dbObjects.CreateTable(FK_TABLE_PRIMARY, pktColumns, PrimaryKeyConstraintSpec(T1_CONSTRAINT_NAME, pkColumns)));
   ASSERT_NO_FATAL_FAILURE(dbObjects.CreateTable(FK_TABLE_FOREIGN, fktColumns, ForeignKeyConstraintSpec(T2_CONSTRAINT_NAME, fkColumns,FK_TABLE_PRIMARY, pkColumns)));
@@ -255,7 +252,7 @@ TEST_F(MSSQL_Metadata, SQLTablePrivileges) {
 
   const int CHARSIZE = 255;
   
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
   RETCODE rcode;
   
   const string PRIV_TABLE1 = "table_priv";
@@ -283,7 +280,7 @@ TEST_F(MSSQL_Metadata, SQLTablePrivileges) {
     {7, SQL_C_CHAR, is_grantable, CHARSIZE}
   };
   
-  DatabaseObjects dbObjects(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  DatabaseObjects dbObjects(Drivers::GetDriver(ServerType::MSSQL));
   ASSERT_NO_FATAL_FAILURE(dbObjects.CreateTable(PRIV_TABLE1, columns));
 
   ASSERT_NO_FATAL_FAILURE(odbcHandler.Connect(true));
@@ -318,7 +315,7 @@ TEST_F(MSSQL_Metadata, SQLTableColumnPrivileges) {
   const string COL_1 = "id1";
   const string COL_2 = "id2";
 
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
   RETCODE rcode;
   int col1_count = 0;
   int col2_count = 0;
@@ -349,7 +346,7 @@ TEST_F(MSSQL_Metadata, SQLTableColumnPrivileges) {
     {8, SQL_C_CHAR, is_grantable, CHARSIZE}
   };
   
-  DatabaseObjects dbObjects(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  DatabaseObjects dbObjects(Drivers::GetDriver(ServerType::MSSQL));
   ASSERT_NO_FATAL_FAILURE(dbObjects.CreateTable(PRIV_COL_TABLE1, columns));
 
   ASSERT_NO_FATAL_FAILURE(odbcHandler.Connect(true));
@@ -386,7 +383,7 @@ TEST_F(MSSQL_Metadata, SQLTableColumnPrivileges) {
 // DISABLED: PLEASE SEE BABELFISH-118
 TEST_F(MSSQL_Metadata, DISABLED_SQLColumns) {
 
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
   RETCODE rcode;
   const string COL_TABLE1 = "col_table_1";
   const string CONSTRAINT_NAME = "PK_constraint";
@@ -425,7 +422,7 @@ TEST_F(MSSQL_Metadata, DISABLED_SQLColumns) {
     {18, SQL_C_CHAR, is_nullable, CHARSIZE}
   };
 
-  DatabaseObjects dbObjects(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  DatabaseObjects dbObjects(Drivers::GetDriver(ServerType::MSSQL));
   ASSERT_NO_FATAL_FAILURE(dbObjects.CreateTable(COL_TABLE1, columns, PrimaryKeyConstraintSpec(CONSTRAINT_NAME, {{PK_INT_COLUMN_NAME}})));
   ASSERT_NO_FATAL_FAILURE(odbcHandler.Connect(true));
 
@@ -466,7 +463,7 @@ TEST_F(MSSQL_Metadata, DISABLED_SQLColumns) {
 // DISABLED: PLEASE SEE BABELFISH-119
 TEST_F(MSSQL_Metadata, DISABLED_SQLProcedures) {
 
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
   RETCODE rcode;
   
   const string SCHEMA_NAME = "schema_1";
@@ -490,7 +487,7 @@ TEST_F(MSSQL_Metadata, DISABLED_SQLProcedures) {
     {8, SQL_C_SHORT, &procedure_type, 0}
   };
 
-  DatabaseObjects dbObjects(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  DatabaseObjects dbObjects(Drivers::GetDriver(ServerType::MSSQL));
   ASSERT_NO_FATAL_FAILURE(dbObjects.CreateTable(PROC_TABLE, columns));
   ASSERT_NO_FATAL_FAILURE(dbObjects.CreateSchema(SCHEMA_NAME));
   ASSERT_NO_FATAL_FAILURE(dbObjects.CreateProcedure(SCHEMA_NAME + "." + PROCEDURE_NAME, 
@@ -540,7 +537,7 @@ TEST_F(MSSQL_Metadata, DISABLED_SQLProcedures) {
 // DISABLED: PLEASE SEE BABELFISH-120
 TEST_F(MSSQL_Metadata, DISABLED_SQLProcedureColumns) {
 
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
   RETCODE rcode;
 
   const string SCHEMA_NAME = "schema_2";  
@@ -572,7 +569,7 @@ TEST_F(MSSQL_Metadata, DISABLED_SQLProcedureColumns) {
     {19, SQL_C_CHAR, is_nullable, CHARSIZE}
   };
 
-  DatabaseObjects dbObjects(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  DatabaseObjects dbObjects(Drivers::GetDriver(ServerType::MSSQL));
   ASSERT_NO_FATAL_FAILURE(dbObjects.CreateTable(PROC_TABLE, columns));
   ASSERT_NO_FATAL_FAILURE(dbObjects.CreateSchema(SCHEMA_NAME));
   ASSERT_NO_FATAL_FAILURE(dbObjects.CreateProcedure(SCHEMA_NAME + "." + PROCEDURE_NAME, 
@@ -637,7 +634,7 @@ TEST_F(MSSQL_Metadata, DISABLED_SQLProcedureColumns) {
 // Tests SQLProcedureColumns for success with primary keys
 TEST_F(MSSQL_Metadata, SQLSpecialColumns_PrimaryKeys) {
 
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
   RETCODE rcode;
   const string COL_TABLE = "col_table_primary_keys";
   const string CONSTRAINT_NAME = "PK_constraint_1";
@@ -661,7 +658,7 @@ TEST_F(MSSQL_Metadata, SQLSpecialColumns_PrimaryKeys) {
     {4, SQL_C_CHAR, type_name, CHARSIZE}
   };
 
-  DatabaseObjects dbObjects(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  DatabaseObjects dbObjects(Drivers::GetDriver(ServerType::MSSQL));
   ASSERT_NO_FATAL_FAILURE(dbObjects.CreateTable(COL_TABLE, columns, PrimaryKeyConstraintSpec(CONSTRAINT_NAME, pkColumns)));
   ASSERT_NO_FATAL_FAILURE(odbcHandler.Connect(true));
   
@@ -683,7 +680,7 @@ TEST_F(MSSQL_Metadata, SQLSpecialColumns_PrimaryKeys) {
 // DISABLED: PLEASE SEE BABELFISH-121
 TEST_F(MSSQL_Metadata, DISABLED_SQLSpecialColumns_AutoUpdatedColumns) {
 
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
   RETCODE rcode;
   const string COL_TABLE = "col_table_auto_update";
   const string INT_COLUMN_NAME = "IntCol";
@@ -703,7 +700,7 @@ TEST_F(MSSQL_Metadata, DISABLED_SQLSpecialColumns_AutoUpdatedColumns) {
     {4, SQL_C_CHAR, type_name, CHARSIZE}
   };
 
-  DatabaseObjects dbObjects(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  DatabaseObjects dbObjects(Drivers::GetDriver(ServerType::MSSQL));
   ASSERT_NO_FATAL_FAILURE(dbObjects.CreateTable(COL_TABLE, columns));
   ASSERT_NO_FATAL_FAILURE(odbcHandler.Connect(true));
   
@@ -784,7 +781,7 @@ TEST_F(MSSQL_Metadata, SQLSetEnvAttr_SQL_ATTR_CP_MATCH) {
 // Tests SQLGetTypeInfo for success
 TEST_F(MSSQL_Metadata, SQLGetTypeInfo) {
 
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
   RETCODE rcode;
   const int CHARSIZE = 255;
   char type_name[CHARSIZE];
@@ -818,7 +815,7 @@ TEST_F(MSSQL_Metadata, SQLGetTypeInfo) {
 // DISABLED: PLEASE SEE BABELFISH-132
 TEST_F(MSSQL_Metadata, DISABLED_SQLTables_Catalogs) {
 	 
-	OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+	OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
 	RETCODE rcode = -1;
 
   ASSERT_NO_FATAL_FAILURE(odbcHandler.Connect(true));
@@ -842,7 +839,7 @@ TEST_F(MSSQL_Metadata, DISABLED_SQLTables_Catalogs) {
 // DISABLED: PLEASE SEE BABELFISH-132
 TEST_F(MSSQL_Metadata, DISABLED_SQLTables_Tables) {
 	 
-	OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+	OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
 	RETCODE rcode = -1;
 
   const vector<string> testTables = {
@@ -858,7 +855,7 @@ TEST_F(MSSQL_Metadata, DISABLED_SQLTables_Tables) {
     {"decivar", "NUMERIC(38,16) NOT NULL"}
   };
 
-  DatabaseObjects dbObjects(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  DatabaseObjects dbObjects(Drivers::GetDriver(ServerType::MSSQL));
 
   for (auto table : testTables) {
     ASSERT_NO_FATAL_FAILURE(dbObjects.CreateTable(table, columns));
@@ -889,7 +886,7 @@ TEST_F(MSSQL_Metadata, DISABLED_SQLTables_Tables) {
 // DISABLED: PLEASE SEE BABELFISH-132
 TEST_F(MSSQL_Metadata, DISABLED_SQLTables_Views) {
 	 
-	OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+	OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
 	RETCODE rcode = -1;
 
   const string testTable {"meta_table"};
@@ -913,7 +910,7 @@ TEST_F(MSSQL_Metadata, DISABLED_SQLTables_Views) {
     {"meta_view2", SelectStatement(testTable, {"*"})}
   };
 
-  DatabaseObjects dbObjects(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  DatabaseObjects dbObjects(Drivers::GetDriver(ServerType::MSSQL));
 
   // Normally CreateTable and CreateView functions of DatabaseObjects try to drop the object before creating.
   // Here we need to drop views explicitly, because the CreateTable below would attempt to drop the table first.

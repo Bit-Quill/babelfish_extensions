@@ -19,9 +19,9 @@ find_package(ODBC REQUIRED)
 
 enable_testing()
 
-file(GLOB SRC src/*.cpp)
-file(GLOB MSSQL_TEST_SOURCES mssqlodbc/*.cpp)
-file(GLOB PSQL_TEST_SOURCES psqlodbc/*.cpp)
+file(GLOB SRC CONFIGURE_DEPENDS src/*.cpp)
+file(GLOB MSSQL_TEST_SOURCES CONFIGURE_DEPENDS mssqlodbc/*.cpp)
+file(GLOB PSQL_TEST_SOURCES CONFIGURE_DEPENDS psqlodbc/*.cpp)
 
 add_executable(
   main

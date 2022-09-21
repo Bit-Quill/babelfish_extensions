@@ -5,10 +5,7 @@
 
 class PSQL_Connection : public testing::Test {
   void SetUp() override {
-    
-    map<constants::ServerType, ConnectionObject> available_drivers = Drivers::GetOdbcDrivers();
-
-    if (available_drivers.find(ServerType::PSQL) == available_drivers.end()) {
+    if(!Drivers::DriverExists(ServerType::PSQL)) {
       GTEST_SKIP() << "PSQL Driver not present: skipping all tests for this fixture.";
     }
   }
@@ -17,7 +14,7 @@ class PSQL_Connection : public testing::Test {
 
 TEST_F(PSQL_Connection, SQLDriverConnect_SuccessfulConnectionTest) {
   
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   odbcHandler.AllocateEnvironmentHandle();
   odbcHandler.AllocateConnectionHandle();

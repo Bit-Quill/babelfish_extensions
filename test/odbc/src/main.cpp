@@ -6,21 +6,21 @@
 using std::string;
 using std::vector;
 
-// Trims whitespace from a string from left and right side.
+// Trims whitespace from a string from the left and right side.
 string trim(const string &s) {
   const string WHITESPACE = " \n\r\t\f\v";
 
-  // trim whitespace from left
+  // Trim whitespace from the left.
   size_t start = s.find_first_not_of(WHITESPACE);
   string left_trimmed = ((start == string::npos) ? "" : s.substr(start));
 
-  // trim whitespace from right
+  // Trim whitespace from the right.
   size_t end = left_trimmed.find_last_not_of(WHITESPACE);
   return (end == string::npos) ? "" : left_trimmed.substr(0, end + 1);
 }
 
 // Parses the odbc_schedule file line by line.
-void ParseSchedule(vector<string> &tests_to_run, vector<string> &tests_to_skip, bool &contains_all) {
+string ParseSchedule() {
   const string IGNORE_FLAG = "ignore#!#";
   const int IGNORE_FLAG_LENGTH = IGNORE_FLAG.length();
 
@@ -28,11 +28,17 @@ void ParseSchedule(vector<string> &tests_to_run, vector<string> &tests_to_skip, 
   std::ifstream schedule_file;
   schedule_file.open("odbc_schedule");
 
+  string filter_string = "*";
+  vector<string> tests_to_run;
+  vector<string> tests_to_skip;
+
   if (!schedule_file.is_open()) {
       // ERROR: Cannot open schedule file
-      return;
+      // If odbc_schedule file can't be read, run all tests by default.
+      return filter_string;
   }
 
+  // Read from odbc_schedule file
   while (std::getline(schedule_file, line)) {
     line = trim(line);
 
@@ -41,33 +47,26 @@ void ParseSchedule(vector<string> &tests_to_run, vector<string> &tests_to_skip, 
     }
     
     if (line == "all") {
-      contains_all = true;
-      return;
+      return filter_string;
     }
-
+     // If line starts with "ignore#!#", get test name and add to tests_to_skip.
     if (line.rfind(IGNORE_FLAG, 0) == 0) {
-      string value = line.substr(IGNORE_FLAG_LENGTH);
-      tests_to_skip.push_back(value);
+      string test_name = line.substr(IGNORE_FLAG_LENGTH);
+      tests_to_skip.push_back(test_name);
     }
     else {
       tests_to_run.push_back(line);
     }
   }
-}
 
-int main(int argc, char **argv) {
-  string filter_string = "*";
-  vector<string> tests_to_run;
-  vector<string> tests_to_skip;
-  bool contains_all = false;
-  
-  ParseSchedule(tests_to_run, tests_to_skip, contains_all);
+  // If there are no test names in odbc_schedule file, return the string to run all tests.
+  if (tests_to_run.empty() && tests_to_skip.empty()) {
+    return filter_string;
+  }
 
-  // If odbc_schedule doesn't contain 'all', build the string GoogleTest will use to run or skip tests.
-  if (!contains_all) {
-    filter_string = "";
-
-    for (auto it = tests_to_run.begin(); it != tests_to_run.end(); ++it) {
+  // Build the string GoogleTest will use to run or skip tests.
+  filter_string = "";
+  for (auto it = tests_to_run.begin(); it != tests_to_run.end(); ++it) {
       filter_string.append(*it);
       filter_string.append(":");
     }
@@ -77,9 +76,12 @@ int main(int argc, char **argv) {
       filter_string.append(*it);
       filter_string.append(":");
     }
-  }
+  return filter_string;
+}
+
+int main(int argc, char **argv) {
   
   ::testing::InitGoogleTest(&argc, argv);
-  ::testing::GTEST_FLAG(filter) = filter_string;
+  ::testing::GTEST_FLAG(filter) = ParseSchedule();
   return RUN_ALL_TESTS();
 }

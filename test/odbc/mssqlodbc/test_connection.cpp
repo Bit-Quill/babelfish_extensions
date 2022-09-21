@@ -5,10 +5,7 @@
 
 class MSSQL_Connection : public testing::Test {
   void SetUp() override {
-
-    map<constants::ServerType, ConnectionObject> available_drivers = Drivers::GetOdbcDrivers();
-
-    if (available_drivers.find(ServerType::MSSQL) == available_drivers.end()) {
+    if(!Drivers::DriverExists(ServerType::MSSQL)) {
       GTEST_SKIP() << "MSSQL Driver not present: skipping all tests for this fixture.";
     }
   }
@@ -17,7 +14,7 @@ class MSSQL_Connection : public testing::Test {
 
 TEST_F(MSSQL_Connection, SQLDriverConnect_SuccessfulConnectionTest) {
 
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::MSSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
 
   odbcHandler.AllocateEnvironmentHandle();
   odbcHandler.AllocateConnectionHandle();

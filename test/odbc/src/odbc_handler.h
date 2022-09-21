@@ -24,7 +24,7 @@ class OdbcHandler {
     ~OdbcHandler();
 
     // Sets the connection string based on server type
-    void SetConnectionProperties(ConnectionObject co);
+    void SetConnectionProperties(ConnectionObject &co);
     
     // Connects to Database
     void Connect(bool allocate_statement_handle = false);

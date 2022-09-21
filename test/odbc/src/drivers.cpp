@@ -93,8 +93,4 @@ bool Drivers::IsValidConnectionObject(string driver, string server, string port,
   return true;
 }
 
-map<ServerType, ConnectionObject> Drivers::PrivGetOdbcDrivers() {
-  return odbc_drivers_;
-}
-
 map<ServerType, ConnectionObject> Drivers::odbc_drivers_{};
