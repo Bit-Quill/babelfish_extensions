@@ -5,11 +5,11 @@
 
 using std::pair;
 
-const string TABLE_NAME = "master_dbo.bpchar_table_odbc_test";
-const string VIEW_NAME = "master_dbo.bpchar_view_odbc_test";
-const string DATATYPE = "sys.bpchar";
+const string TABLE_NAME = "master_dbo.nchar_table_odbc_test";
+const string VIEW_NAME = "master_dbo.nchar_view_odbc_test";
+const string DATATYPE = "sys.nchar";
 const int NUM_COLS = 4;
-const string COL_NAMES[NUM_COLS] = {"pk", "nvarchar_1", "nvarchar_4000", "nvarchar_20"};
+const string COL_NAMES[NUM_COLS] = {"pk", "nchar_1", "nchar_4000", "nchar_20"};
 const int COL_LENGTH[NUM_COLS] = {10, 1, 4000, 20};
 
 const string COL_TYPES[NUM_COLS] = {
@@ -62,7 +62,7 @@ const string STRING_4000 = "TQR6vCl9UH5qg2UEJMleJaa3yToVaUbhhxQ7e0SgHjrKg1TYvyUz
 const string STRING_1 = "a";
 const string STRING_20 = "0123456789abcdefghij";
 
-class PSQL_DataTypes_bpchar : public testing::Test{
+class PSQL_DataTypes_nchar : public testing::Test{
 
   void SetUp() override {
 
@@ -110,7 +110,7 @@ string InitializeInsertString(const vector<vector<string>> &inserted_values) {
   return insert_string;
 }
 
-TEST_F(PSQL_DataTypes_bpchar, ColAttributes) {
+TEST_F(PSQL_DataTypes_nchar, ColAttributes) {
 
   const int LENGTH_EXPECTED = 10;
   const int PRECISION_EXPECTED = 0;
@@ -221,7 +221,7 @@ TEST_F(PSQL_DataTypes_bpchar, ColAttributes) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-TEST_F(PSQL_DataTypes_bpchar, Table_Create_Fail) {
+TEST_F(PSQL_DataTypes_nchar, Table_Create_Fail) {
 
   vector<vector<pair<string, string>>> invalid_columns{
     {{"invalid1", DATATYPE + "(-1)"}},
@@ -250,7 +250,7 @@ TEST_F(PSQL_DataTypes_bpchar, Table_Create_Fail) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-TEST_F(PSQL_DataTypes_bpchar, Insertion_Success) {
+TEST_F(PSQL_DataTypes_nchar, Insertion_Success) {
 
   const int BUFFER_LENGTH = 8192;
 
@@ -305,8 +305,12 @@ TEST_F(PSQL_DataTypes_bpchar, Insertion_Success) {
     for (int j = 0; j < NUM_COLS; j++) {
       std::cout<<"Current string is: "<<inserted_values[i][j]<<'\n'<<"Current number of space: "<<COL_LENGTH[j]<<" ==>> "<<inserted_values[i][j].size()<<"\n";
       if (inserted_values[i][j] != "NULL") {
-        ASSERT_EQ(string(col_results[j]), inserted_values[i][j]+ operator_multiple(" ",(COL_LENGTH[j]-inserted_values[i][j].size())));
+        // ASSERT_EQ(string(col_results[j]), inserted_values[i][j]+ operator_multiple(" ",(COL_LENGTH[j]-inserted_values[i][j].size())));
+        // ASSERT_EQ(col_len[j], COL_LENGTH[j]);
+
+        ASSERT_EQ(string(col_results[j]), inserted_values[i][j]+(string (COL_LENGTH[j]-inserted_values[i][j].size(),' ')));
         ASSERT_EQ(col_len[j], COL_LENGTH[j]);
+
       } 
       // else if(inserted_values[i][j]==""){
       //   ASSERT_EQ(string(col_results[j]), inserted_values[i][j]+(std::string ((COL_LENGTH[j]-inserted_values[i][j].size()," "))));
@@ -325,7 +329,7 @@ TEST_F(PSQL_DataTypes_bpchar, Insertion_Success) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-TEST_F(PSQL_DataTypes_bpchar, Insertion_Failure) {
+TEST_F(PSQL_DataTypes_nchar, Insertion_Failure) {
 
   const int BUFFER_LENGTH = 8192;
 
@@ -372,7 +376,7 @@ TEST_F(PSQL_DataTypes_bpchar, Insertion_Failure) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-TEST_F(PSQL_DataTypes_bpchar, Update_Success) {
+TEST_F(PSQL_DataTypes_nchar, Update_Success) {
 
   const int BUFFER_LENGTH = 8192;
   const int AFFECTED_ROWS_EXPECTED = 1;
@@ -473,7 +477,7 @@ TEST_F(PSQL_DataTypes_bpchar, Update_Success) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-TEST_F(PSQL_DataTypes_bpchar, Update_Fail) {
+TEST_F(PSQL_DataTypes_nchar, Update_Fail) {
 
   const int BUFFER_LENGTH = 8192;
   const int AFFECTED_ROWS_EXPECTED = 1;
@@ -571,7 +575,7 @@ TEST_F(PSQL_DataTypes_bpchar, Update_Fail) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-TEST_F(PSQL_DataTypes_bpchar, View_creation) {
+TEST_F(PSQL_DataTypes_nchar, View_creation) {
 
   const string VIEW_QUERY = "SELECT * FROM " + TABLE_NAME;
   const int BUFFER_LENGTH = 8192;
