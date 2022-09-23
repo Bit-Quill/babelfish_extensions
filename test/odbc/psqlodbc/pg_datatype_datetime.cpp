@@ -23,12 +23,17 @@ vector<pair<string, string>> TABLE_COLUMNS = {
 
 class PSQL_Datatypes_Datetime: public testing::Test {
    void SetUp() override {
-    OdbcHandler test_setup(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+
+    if(!Drivers::DriverExists(ServerType::PSQL)) {
+      GTEST_SKIP() << "MSSQL Driver not present: skipping all tests for this fixture.";
+    }
+
+    OdbcHandler test_setup(Drivers::GetDriver(ServerType::PSQL));
     test_setup.ConnectAndExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
    }
 
    void TearDown() override {
-    OdbcHandler test_cleanup(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+    OdbcHandler test_cleanup(Drivers::GetDriver(ServerType::PSQL));
     test_cleanup.ConnectAndExecQuery(DropObjectStatement("VIEW", VIEW_NAME));
     test_cleanup.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
    }
@@ -73,7 +78,7 @@ TEST_F(PSQL_Datatypes_Datetime, Table_Creation) {
   SQLLEN scale;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   // Create a table with columns defined with the specific datatype being tested. 
 
@@ -138,7 +143,7 @@ TEST_F(PSQL_Datatypes_Datetime, DISABLED_Table_Create_Fail) {
   };
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   // Create a table with columns defined with the specific datatype being tested. 
   odbcHandler.Connect();
@@ -167,7 +172,7 @@ TEST_F(PSQL_Datatypes_Datetime, Insertion_Success) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {"1", "NULL"}, // NULL values
@@ -246,7 +251,7 @@ TEST_F(PSQL_Datatypes_Datetime, Insertion_Failure) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {"1", "1752-01-01 00:00:000" }, // past lowest boundary
@@ -304,7 +309,7 @@ TEST_F(PSQL_Datatypes_Datetime, Update_Success) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {PK_VAL, "2011-04-15 16:44:09"} 
@@ -411,7 +416,7 @@ TEST_F(PSQL_Datatypes_Datetime, Update_Fail) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {PK_VAL, "2011-04-15 16:44:09"} 
@@ -510,7 +515,7 @@ TEST_F(PSQL_Datatypes_Datetime, View_creation) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {"1", "NULL"}, // NULL values
@@ -618,7 +623,7 @@ TEST_F(PSQL_Datatypes_Datetime, Table_Single_Primary_Keys) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS, table_constraints));
   odbcHandler.CloseStmt();
@@ -758,7 +763,7 @@ TEST_F(PSQL_Datatypes_Datetime, Table_Composite_Primary_Keys) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS, table_constraints));
   odbcHandler.CloseStmt();
@@ -902,7 +907,7 @@ TEST_F(PSQL_Datatypes_Datetime, Table_Unique_Constraint) {
   char column_name[CHARSIZE];
 
   RETCODE rcode;
-  OdbcHandler odbcHandler(Drivers::GetOdbcDrivers().at(ServerType::PSQL));
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS, table_constraints));
   odbcHandler.CloseStmt();
@@ -995,5 +1000,203 @@ TEST_F(PSQL_Datatypes_Datetime, Table_Unique_Constraint) {
   rcode = SQLExecDirect(odbcHandler.GetStatementHandle(), (SQLCHAR*) InsertStatement(TABLE_NAME, insert_string).c_str(), SQL_NTS);
   ASSERT_EQ(rcode, SQL_ERROR);
 
+  odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
+}
+
+TEST_F(PSQL_Datatypes_Datetime, Comparison_Operators) {
+  const int BUFFER_SIZE = 256;
+  
+  const vector<pair<string, string>> TABLE_COLUMNS = {
+    {COL_NAMES[0], DATATYPE + " PRIMARY KEY"},
+    {COL_NAMES[1], DATATYPE}
+  };
+
+  RETCODE rcode;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
+  SQLLEN affected_rows;
+  const int BYTES_EXPECTED = 1;
+
+  vector<string> INSERTED_PK = {
+    "1753-01-01 00:00:000",
+    "9999-12-31 23:59:59.997"
+  };
+
+  vector<string> INSERTED_DATA = {
+    "1754-01-01 00:00:000",
+    "9999-12-31 23:59:59.997"
+  };
+  const int NUM_OF_DATA = INSERTED_DATA.size();
+
+  vector<string> OPERATIONS_QUERY = {
+    COL_NAMES[0] + "=" + COL_NAMES[1],
+    COL_NAMES[0] + "<>" + COL_NAMES[1],
+    COL_NAMES[0] + "<" + COL_NAMES[1],
+    COL_NAMES[0] + "<=" + COL_NAMES[1],
+    COL_NAMES[0] + ">" + COL_NAMES[1],
+    COL_NAMES[0] + ">=" + COL_NAMES[1]
+  };
+  const int NUM_OF_OPERATIONS = OPERATIONS_QUERY.size();
+
+  // initialization of expected_results
+  vector<vector<char>> expected_results = {};
+  for (int i = 0; i < NUM_OF_DATA; i++) {
+    expected_results.push_back({});
+    const char *date_1 = INSERTED_PK[i].data();
+    const char *date_2 = INSERTED_DATA[i].data();
+    expected_results[i].push_back(strcmp(date_1, date_2) == 0 ? '1' : '0');
+    expected_results[i].push_back(strcmp(date_1, date_2) != 0 ? '1' : '0');
+    expected_results[i].push_back(strcmp(date_1, date_2) < 0 ? '1' : '0');
+    expected_results[i].push_back(strcmp(date_1, date_2) <= 0 ? '1' : '0');
+    expected_results[i].push_back(strcmp(date_1, date_2) > 0 ? '1' : '0');
+    expected_results[i].push_back(strcmp(date_1, date_2) >= 0 ? '1' : '0');
+  }
+
+  char col_results[NUM_OF_OPERATIONS];
+  SQLLEN col_len[NUM_OF_OPERATIONS];
+  vector<tuple<int, int, SQLPOINTER, int, SQLLEN *>> BIND_COLUMNS = {};
+
+  // initialization for bind_columns
+  for (int i = 0; i < NUM_OF_OPERATIONS; i++) {
+    tuple<int, int, SQLPOINTER, int, SQLLEN *> tuple_to_insert(i + 1, SQL_C_CHAR, (SQLPOINTER)&col_results[i], BUFFER_SIZE, &col_len[i]);
+    BIND_COLUMNS.push_back(tuple_to_insert);
+  }
+
+  string insert_string{};
+  string comma{};
+
+  // insert_string initialization
+  for (int i = 0; i < NUM_OF_DATA; i++) {
+    insert_string += comma + "(\'" + INSERTED_PK[i] + "\',\'" + INSERTED_DATA[i] + "\')";
+    comma = ",";
+  }
+
+  // Create table
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
+  odbcHandler.CloseStmt();
+
+  // Insert valid values into the table and assert affected rows
+  odbcHandler.ExecQuery(InsertStatement(TABLE_NAME, insert_string));
+
+  rcode = SQLRowCount(odbcHandler.GetStatementHandle(), &affected_rows);
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+  ASSERT_EQ(affected_rows, NUM_OF_DATA);
+
+  // Make sure inserted values are correct and operations
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(BIND_COLUMNS));
+
+  for (int i = 0; i < NUM_OF_DATA; i++) {
+    odbcHandler.CloseStmt();
+    odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, OPERATIONS_QUERY, vector<string>{}, COL_NAMES[0] + "=\'" + INSERTED_PK[i] + "\'"));
+    ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(BIND_COLUMNS));
+
+    rcode = SQLFetch(odbcHandler.GetStatementHandle());
+    ASSERT_EQ(rcode, SQL_SUCCESS);
+
+    for (int j = 0; j < NUM_OF_OPERATIONS; j++) {
+      ASSERT_EQ(col_len[j], BYTES_EXPECTED);
+      ASSERT_EQ(col_results[j], expected_results[i][j]);
+    }
+  }
+
+  // Assert that there is no more data
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_NO_DATA);
+
+  odbcHandler.CloseStmt();
+  odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
+}
+
+// inserted values differ that of expected?
+TEST_F(PSQL_Datatypes_Datetime, Comparison_Functions) {
+  const int BUFFER_SIZE = 256;
+
+  const int BYTES_EXPECTED = 1;
+  SQLLEN affected_rows;
+
+  RETCODE rcode;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
+
+  const vector<string> INSERTED_DATA = {
+    "1753-01-01 00:00:000",
+    "2011-04-15 16:44:09.000",
+    "9999-12-31 23:59:59.997"
+  };
+
+  const vector<string> EXPECTED_RESULTS = {
+    "1753-01-01 00:00:00",
+    "2011-04-15 16:44:09",
+    "9999-12-31 23:59:59.997"
+  };
+  const int NUM_OF_DATA = INSERTED_DATA.size();
+
+  const vector<string> OPERATIONS_QUERY = {
+    "MIN(" + COL_NAMES[1] + ")",
+    "MAX(" + COL_NAMES[1] + ")"
+  };
+  const int NUM_OF_OPERATIONS = OPERATIONS_QUERY.size();
+
+  // initialization of expected_results
+  vector<string> expected_results = {};
+  int min_expected = 0, max_expected = 0;
+  for (int i = 1; i < NUM_OF_DATA; i++) {
+    const char *currMin = EXPECTED_RESULTS[min_expected].data();
+    const char *currMax = EXPECTED_RESULTS[max_expected].data();
+    const char *curr = EXPECTED_RESULTS[i].data();
+
+    min_expected = strcmp(curr, currMin) < 0 ? i : min_expected;
+    max_expected = strcmp(curr, currMax) > 0 ? i : min_expected;
+  }
+  expected_results.push_back(EXPECTED_RESULTS[min_expected]);
+  expected_results.push_back(EXPECTED_RESULTS[max_expected]);
+
+  char col_results[NUM_OF_OPERATIONS][BUFFER_SIZE];
+  SQLLEN col_len[NUM_OF_OPERATIONS];
+  vector<tuple<int, int, SQLPOINTER, int, SQLLEN *>> BIND_COLUMNS = {};
+
+  // initialization for bind_columns
+  for (int i = 0; i < NUM_OF_OPERATIONS; i++) {
+    tuple<int, int, SQLPOINTER, int, SQLLEN *> tuple_to_insert(i + 1, SQL_C_CHAR, (SQLPOINTER)&col_results[i], BUFFER_SIZE, &col_len[i]);
+    BIND_COLUMNS.push_back(tuple_to_insert);
+  }
+
+  string insert_string{};
+  string comma{};
+
+  // insert_string initialization
+  for (int i = 0; i < NUM_OF_DATA; i++) {
+    insert_string += comma + "(" + std::to_string(i) + ",\'" + INSERTED_DATA[i] + "\')";
+    comma = ",";
+  }
+
+  // Create table
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
+  odbcHandler.CloseStmt();
+
+  // Insert valid values into the table and assert affected rows
+  odbcHandler.ExecQuery(InsertStatement(TABLE_NAME, insert_string));
+
+  rcode = SQLRowCount(odbcHandler.GetStatementHandle(), &affected_rows);
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+  ASSERT_EQ(affected_rows, NUM_OF_DATA);
+
+  // Make sure inserted values are correct and operations
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(BIND_COLUMNS));
+
+  odbcHandler.CloseStmt();
+  odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, OPERATIONS_QUERY, vector<string>{}));
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(BIND_COLUMNS));
+
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+  for (int i = 0; i < NUM_OF_OPERATIONS; i++) {
+    ASSERT_EQ(col_len[i], expected_results[i].length());
+    ASSERT_EQ(string(col_results[i]), expected_results[i]);
+  }
+
+  // Assert that there is no more data
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_NO_DATA);
+
+  odbcHandler.CloseStmt();
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
