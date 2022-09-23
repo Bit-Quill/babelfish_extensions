@@ -6,7 +6,6 @@
 #include <gtest/gtest.h>
 #include <sqlext.h>
 
-
 using std::pair;
 
 const string TABLE_NAME = "master_dbo.datetime_table_odbc_test";
@@ -15,7 +14,6 @@ const string DATATYPE = "sys.datetime";
 const int NUM_COLS = 2;
 const string COL_NAMES[NUM_COLS] = {"pk", "datetime_1"};
 
-
 vector<pair<string, string>> TABLE_COLUMNS = {
     {COL_NAMES[0], " int PRIMARY KEY"},
     {COL_NAMES[1], DATATYPE}
@@ -23,9 +21,8 @@ vector<pair<string, string>> TABLE_COLUMNS = {
 
 class PSQL_Datatypes_Datetime: public testing::Test {
    void SetUp() override {
-
     if(!Drivers::DriverExists(ServerType::PSQL)) {
-      GTEST_SKIP() << "MSSQL Driver not present: skipping all tests for this fixture.";
+      GTEST_SKIP() << "PSQL Driver not present: skipping all tests for this fixture.";
     }
 
     OdbcHandler test_setup(Drivers::GetDriver(ServerType::PSQL));
@@ -33,6 +30,9 @@ class PSQL_Datatypes_Datetime: public testing::Test {
    }
 
    void TearDown() override {
+    if(!Drivers::DriverExists(ServerType::PSQL)) {
+        GTEST_SKIP() << "PSQL Driver not present: skipping tear down.";
+    }
     OdbcHandler test_cleanup(Drivers::GetDriver(ServerType::PSQL));
     test_cleanup.ConnectAndExecQuery(DropObjectStatement("VIEW", VIEW_NAME));
     test_cleanup.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
