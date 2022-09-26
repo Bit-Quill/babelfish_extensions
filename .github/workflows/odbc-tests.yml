@@ -39,7 +39,10 @@ jobs:
         run: |
           cd ~
           sudo apt-get install msodbcsql17
-      
+          
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+
       - name: Run ODBC Tests
         if: always() && steps.install-odbc-driver.outcome == 'success'
         run: |
