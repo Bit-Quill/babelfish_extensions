@@ -53,7 +53,7 @@ jobs:
           make
           sudo make install
 
-        - name: Install psqlODBC Driver
+      - name: Install psqlODBC Driver
         id: install-psql-odbc-driver
         if: always() && steps.install-extensions.outcome == 'success' && steps.install-unix-odbc-driver.outcome=='success'
         run: |
