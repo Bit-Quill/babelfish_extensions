@@ -20,6 +20,10 @@ vector<pair<string, string>> TABLE_COLUMNS = {
 const int DATA_COLUMN = 2;
 const int BUFFER_SIZE = 256;
 
+static const string DATE_TIME_FORMAT{"%Y-%m-%d %H:%M:%S"};
+static const string DEFAULT_TIME{" 00:00:00"};
+static const string DEFAULT_DATE_TIME{"1900-01-01 00:00:00 +00:00"};
+
 class PSQL_DataTypes_DateTimeOffset : public testing::Test {
   void SetUp() override {
     OdbcHandler test_setup;
@@ -36,7 +40,6 @@ class PSQL_DataTypes_DateTimeOffset : public testing::Test {
 
 // Helper to get the local timezone (with considerations for daylight savings) for given date
 string getTimeZone(const string& date_time) {
-  static const string DATE_TIME_FORMAT{"%Y-%m-%d %H:%M:%S"};
   std::istringstream ss{ date_time };
   std::tm dt = {0,0,0,0,0,0,0,0,0};
   ss >> std::get_time(&dt, DATE_TIME_FORMAT.c_str());
@@ -52,11 +55,8 @@ string getTimeZone(const string& date_time) {
 
 // Helper to generate the expected fully qualified datetimeoffset
 string generateExpected(const string& date_time) {
-  static const string DEFAULT_TIME{" 00:00:00"};
-  static const string DEFAULT_DATE_TIME{"1900-01-01 00:00:00 +00:00"};
   int num_of_spaces = std::count(date_time.begin(), date_time.end(), ' ');
 
-  string ret = "";
   switch (num_of_spaces) {
     case 0:
       if (date_time.empty() || date_time == "NULL") {
@@ -74,31 +74,40 @@ string generateExpected(const string& date_time) {
   }
 }
 
-const char* dateComparisonHelper(const string& date_time) {
-  string ret = string(date_time);
-  if (ret.length() <= 20) {
-    return ret.data();
+string dateComparisonHelper(const string& date_time) {
+  std::istringstream ss{ date_time };
+  std::tm dt = {0,0,0,0,0,0,0,0,0};
+  ss >> std::get_time(&dt, DATE_TIME_FORMAT.c_str());
+  time_t time_obj = std::mktime(&dt);
+  time_t* time_ptr = &time_obj;  
+
+  int timezone_hr = atoi(date_time.substr(date_time.length() - 5, 2).c_str());
+  int timezone_min = atoi(date_time.substr(date_time.length() - 2, 2).c_str());
+  switch (date_time[date_time.length() - 6]) {
+    case '-':
+      time_obj += timezone_hr * 3600;
+      time_obj += timezone_min * 60;
+      break;
+    case '+':
+      time_obj -= timezone_hr * 3600;
+      time_obj -= timezone_min * 60;
+      break;
   }
+  tm* res = std::localtime(time_ptr);
+  size_t millisecond_pos = date_time.find('.');
+  string millisecond = millisecond_pos != std::string::npos ? date_time.substr(millisecond_pos, date_time.length() - 6 - millisecond_pos) : "";
 
-  // Replacing '+' with '.' to have a larger ascii value than `-`
-  // '+' + 3 = '.' > '-'
-  std::replace(ret.begin(), ret.end(), '+', '.');
-
-  // If timezone is `-`, increase values of hr:mm
-  // eg, -01:00 is greater than -02:00
-  size_t timezone_sign = ret.find_last_of(' ') + 1;
-  size_t timezone_separtor = ret.find_last_of(':');
-  if (ret[timezone_sign] == '-') {
-    // Increase ascii values
-    for (size_t i = timezone_sign + 1; i < timezone_separtor; i++) {
-      ret[i] = char(ret[i]) + 9;
-    }
-    for (size_t i = timezone_separtor + 1; i < ret.length(); i++) {
-      ret[i] = char(ret[i]) + 9;
-    }
-  }
-
-  return ret.data();
+  char ret[BUFFER_SIZE] = "";
+  sprintf(ret, "%02d:%02d:%02d %02d:%02d:%02d%s",
+          res->tm_year + 1900,
+          res->tm_mon,
+          res->tm_mday,
+          res->tm_hour,
+          res->tm_min,
+          res->tm_sec,
+          millisecond.c_str()
+          );
+  return string(ret);
 }
 
 TEST_F(PSQL_DataTypes_DateTimeOffset, Table_Creation) {
@@ -494,8 +503,8 @@ TEST_F(PSQL_DataTypes_DateTimeOffset, Update_Fail) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-// Operators do not work
-TEST_F(PSQL_DataTypes_DateTimeOffset, DISABLED_Comparison_Operators) {
+// Explicit casting is used, ie OPERATOR(sys.=)
+TEST_F(PSQL_DataTypes_DateTimeOffset, Comparison_Operators) {
   const vector<pair<string, string>> TABLE_COLUMNS = {
     {COL1_NAME, DATATYPE_NAME + " PRIMARY KEY"},
     {COL2_NAME, DATATYPE_NAME}
@@ -507,27 +516,32 @@ TEST_F(PSQL_DataTypes_DateTimeOffset, DISABLED_Comparison_Operators) {
   const int BYTES_EXPECTED = 1;
 
   vector<string> INSERTED_PK = {
-    "1900-01-01 00:00:00 +00:00",
+    "1900-01-01 00:00:00 +01:00",
     "1900-01-01 00:00:00 +00:01",
     "1900-01-01 00:00:00",
-    "2000-01-01 00:00:00"
+    "2000-01-01 00:00:05",
+    "2000-01-01 00:00:00.54321",
+    "2000-01-01 00:00:00.123456",
+    "2000-01-01 00:00:00.123456 +10:00"
   };
 
   vector<string> INSERTED_DATA = {
-    "1900-01-01 00:00:00 -00:00",
+    "1900-01-01 00:00:00 -01:00",
     "1900-01-01 00:00:00 +00:02",
     "1900-12-31 23:59:00",
-    "2000-01-01 00:00:00"
+    "2000-01-01 00:00:10",
+    "2000-01-01 00:00:00.123456",
+    "2000-01-01 00:00:00.123456 +10:00"
   };
   const int NUM_OF_DATA = INSERTED_DATA.size();
 
   vector<string> OPERATIONS_QUERY = {
-    COL1_NAME + "=" + COL2_NAME,
-    COL1_NAME + "<>" + COL2_NAME,
-    COL1_NAME + "<" + COL2_NAME,
-    COL1_NAME + "<=" + COL2_NAME,
-    COL1_NAME + ">" + COL2_NAME,
-    COL1_NAME + ">=" + COL2_NAME
+    COL1_NAME + " OPERATOR(sys.=) " + COL2_NAME,
+    COL1_NAME + " OPERATOR(sys.<>) " + COL2_NAME,
+    COL1_NAME + " OPERATOR(sys.<) " + COL2_NAME,
+    COL1_NAME + " OPERATOR(sys.<=) " + COL2_NAME,
+    COL1_NAME + " OPERATOR(sys.>) " + COL2_NAME,
+    COL1_NAME + " OPERATOR(sys.>=) " + COL2_NAME
   };
   const int NUM_OF_OPERATIONS = OPERATIONS_QUERY.size();
 
@@ -535,15 +549,17 @@ TEST_F(PSQL_DataTypes_DateTimeOffset, DISABLED_Comparison_Operators) {
   vector<vector<char>> expected_results = {};
   for (int i = 0; i < NUM_OF_DATA; i++) {
     expected_results.push_back({});
-    const char* date_1 = dateComparisonHelper(INSERTED_PK[i]);
-    const char* date_2 = dateComparisonHelper(INSERTED_DATA[i]);
+    string date_1 = dateComparisonHelper(generateExpected(INSERTED_PK[i]));
+    string date_2 = dateComparisonHelper(generateExpected(INSERTED_DATA[i]));
+    const char* comp_1 = date_1.data();
+    const char* comp_2 = date_2.data();
     
-    expected_results[i].push_back(strcmp(date_1, date_2) == 0 ? '1' : '0');
-    expected_results[i].push_back(strcmp(date_1, date_2) != 0 ? '1' : '0');
-    expected_results[i].push_back(strcmp(date_1, date_2) < 0 ? '1' : '0');
-    expected_results[i].push_back(strcmp(date_1, date_2) <= 0 ? '1' : '0');
-    expected_results[i].push_back(strcmp(date_1, date_2) > 0 ? '1' : '0');
-    expected_results[i].push_back(strcmp(date_1, date_2) >= 0 ? '1' : '0');
+    expected_results[i].push_back(strcmp(comp_1, comp_2) == 0 ? '1' : '0');
+    expected_results[i].push_back(strcmp(comp_1, comp_2) != 0 ? '1' : '0');
+    expected_results[i].push_back(strcmp(comp_1, comp_2) < 0 ? '1' : '0');
+    expected_results[i].push_back(strcmp(comp_1, comp_2) <= 0 ? '1' : '0');
+    expected_results[i].push_back(strcmp(comp_1, comp_2) > 0 ? '1' : '0');
+    expected_results[i].push_back(strcmp(comp_1, comp_2) >= 0 ? '1' : '0');
   }
 
   char col_results[NUM_OF_OPERATIONS];
@@ -581,12 +597,12 @@ TEST_F(PSQL_DataTypes_DateTimeOffset, DISABLED_Comparison_Operators) {
 
   for (int i = 0; i < NUM_OF_DATA; i++) {
     odbcHandler.CloseStmt();
-    odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, OPERATIONS_QUERY, vector<string>{}, COL1_NAME + "=\'" + INSERTED_PK[i] + "\'"));
+    odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, OPERATIONS_QUERY, vector<string>{}, COL1_NAME + " OPERATOR(sys.=)\'" + INSERTED_PK[i] + "\'"));
     ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(BIND_COLUMNS));
 
     rcode = SQLFetch(odbcHandler.GetStatementHandle());
     ASSERT_EQ(rcode, SQL_SUCCESS);
-
+    
     for (int j = 0; j < NUM_OF_OPERATIONS; j++) {
       ASSERT_EQ(col_len[j], BYTES_EXPECTED);
       ASSERT_EQ(col_results[j], expected_results[i][j]);
@@ -601,7 +617,8 @@ TEST_F(PSQL_DataTypes_DateTimeOffset, DISABLED_Comparison_Operators) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-TEST_F(PSQL_DataTypes_DateTimeOffset, DISABLED_Comparison_Functions) {
+// Explicit casting is used, ie sys.MAX()
+TEST_F(PSQL_DataTypes_DateTimeOffset, Comparison_Functions) {
   const int BYTES_EXPECTED = 1;
   SQLLEN affected_rows;
 
@@ -617,8 +634,8 @@ TEST_F(PSQL_DataTypes_DateTimeOffset, DISABLED_Comparison_Functions) {
   const int NUM_OF_DATA = INSERTED_DATA.size();
 
   const vector<string> OPERATIONS_QUERY = {
-    "MIN(" + COL2_NAME + ")",
-    "MAX(" + COL2_NAME + ")"
+    "sys.MIN(" + COL2_NAME + ")",
+    "sys.MAX(" + COL2_NAME + ")"
   };
   const int NUM_OF_OPERATIONS = OPERATIONS_QUERY.size();
 
@@ -626,15 +643,18 @@ TEST_F(PSQL_DataTypes_DateTimeOffset, DISABLED_Comparison_Functions) {
   vector<string> expected_results = {};
   int min_expected = 0, max_expected = 0;
   for (int i = 1; i < NUM_OF_DATA; i++) {
-    const char *currMin = dateComparisonHelper(INSERTED_DATA[min_expected]);
-    const char *currMax = dateComparisonHelper(INSERTED_DATA[max_expected]);
-    const char *curr = dateComparisonHelper(INSERTED_DATA[i]);
+    string curr_min = dateComparisonHelper(generateExpected(INSERTED_DATA[min_expected]));
+    string curr_max = dateComparisonHelper(generateExpected(INSERTED_DATA[max_expected]));
+    string curr = dateComparisonHelper(generateExpected(INSERTED_DATA[i]));
+    const char* comp_min = curr_min.data();
+    const char* comp_max = curr_max.data();
+    const char* comp_curr = curr.data();
 
-    min_expected = strcmp(curr, currMin) < 0 ? i : min_expected;
-    max_expected = strcmp(curr, currMax) > 0 ? i : min_expected;
+    min_expected = strcmp(comp_curr, comp_min) < 0 ? i : min_expected;
+    max_expected = strcmp(comp_curr, comp_max) > 0 ? i : min_expected;
   }
-  expected_results.push_back(INSERTED_DATA[min_expected]);
-  expected_results.push_back(INSERTED_DATA[max_expected]);
+  expected_results.push_back(generateExpected(INSERTED_DATA[min_expected]));
+  expected_results.push_back(generateExpected(INSERTED_DATA[max_expected]));
 
   char col_results[NUM_OF_OPERATIONS][BUFFER_SIZE];
   SQLLEN col_len[NUM_OF_OPERATIONS];
