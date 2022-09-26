@@ -98,7 +98,7 @@ string dateComparisonHelper(const string& date_time) {
   string millisecond = millisecond_pos != std::string::npos ? date_time.substr(millisecond_pos, date_time.length() - 6 - millisecond_pos) : "";
 
   char ret[BUFFER_SIZE] = "";
-  sprintf(ret, "%02d:%02d:%02d %02d:%02d:%02d%s",
+  sprintf(ret, "%02d-%02d-%02d %02d:%02d:%02d%s",
           res->tm_year + 1900,
           res->tm_mon,
           res->tm_mday,
@@ -112,9 +112,9 @@ string dateComparisonHelper(const string& date_time) {
 
 TEST_F(PSQL_DataTypes_DateTimeOffset, Table_Creation) {
   // TODO - Expected needs to be fixed.
-  const int LENGTH_EXPECTED = 255;        // Double check
-  const int PRECISION_EXPECTED = 0;       // Double check
-  const int SCALE_EXPECTED = 0;
+  const int LENGTH_EXPECTED = 255;        // Double check, Expected 10?
+  const int PRECISION_EXPECTED = 0;       // Double check, Expected 34?
+  const int SCALE_EXPECTED = 0;           // Double check, Expected 7?
   const string NAME_EXPECTED = "unknown"; // Double check, Expected "datetimeoffset"?
 
   char name[BUFFER_SIZE];
