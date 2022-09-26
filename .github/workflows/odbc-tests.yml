@@ -64,7 +64,7 @@ jobs:
           ./configure
           sudo make
           sudo make install
-          echo '[ODBC Driver 12 for PostgreSQL]' | sudo tee -a /etc/odbcinst.ini > /dev/null
+          echo '[ODBC_Driver_12_for_PostgreSQL]' | sudo tee -a /etc/odbcinst.ini > /dev/null
           echo 'Description=ODBC Driver 12 for PostgreSQL Server' | sudo tee -a /etc/odbcinst.ini > /dev/null
           echo 'Driver=/usr/local/lib/psqlodbcw.so' | sudo tee -a /etc/odbcinst.ini > /dev/null
           echo 'UsageCount=1' | sudo tee -a /etc/odbcinst.ini > /dev/null
@@ -75,13 +75,12 @@ jobs:
           cd test/odbc
           cmake -S . -B build
           cmake --build build
-          MSSQL_ODBC_DRIVER_NAME=ODBC Driver 17 for SQL Server \
-            MSSQL_BABEL_DB_SERVER=localhost \
+          MSSQL_BABEL_DB_SERVER=localhost \
             MSSQL_BABEL_DB_PORT=1433 \
             MSSQL_BABEL_DB_USER=jdbc_user \
             MSSQL_BABEL_DB_PASSWORD=12345678 \
             MSSQL_BABEL_DB_NAME=master \
-            PSQL_ODBC_DRIVER_NAME=ODBC Driver 12 for PostgreSQL \
+            PSQL_ODBC_DRIVER_NAME=ODBC_Driver_12_for_PostgreSQL \
             PSQL_BABEL_DB_SERVER=localhost \
             PSQL_BABEL_DB_PORT=5432 \
             PSQL_BABEL_DB_USER=jdbc_user \
