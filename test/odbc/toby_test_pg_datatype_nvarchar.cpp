@@ -560,6 +560,119 @@ TEST_F(PSQL_DataTypes_Nvarchar, Update_Fail) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
+TEST_F(PSQL_DataTypes_Nvarchar, String_Operators) {
+  const int BUFFER_LENGTH=8192;
+  const int BYTES_EXPECTED = 4;
+  int pk;
+  char data[BUFFER_LENGTH];
+  SQLLEN pk_len;
+  SQLLEN data_len;
+  SQLLEN affected_rows;
+
+  RETCODE rcode;
+  OdbcHandler odbcHandler;
+
+const int NUM_COLS = 2;
+const string COL_NAMES[NUM_COLS] = {"pk", "data"};
+const int COL_LENGTH[NUM_COLS] = {8190, 8190};
+
+const string COL_TYPES[NUM_COLS] = {
+  DATATYPE,
+  DATATYPE
+};
+
+vector<pair<string, string>> TABLE_COLUMNS_NTEXT = {
+  {COL_NAMES[0], COL_TYPES[0] + " PRIMARY KEY"},
+  {COL_NAMES[1], COL_TYPES[1]}
+};
+
+
+  vector <string> inserted_pk = {
+    "123",
+    "456"
+  };
+
+  vector <string> inserted_data = {
+    "One Two Three",
+    "Four Five Six"
+  };
+
+  vector <string> operations_query = {
+    COL_NAMES[0]+ "||" + COL_NAMES[1],
+    "lower("+COL_NAMES[1]+")"
+  };
+
+
+  vector<vector<string>>expected_results = {{},{}};
+
+  // initialization of expected_results
+  for (int i = 0; i < inserted_pk.size(); i++) {
+    expected_results[i].push_back(inserted_pk[i] + inserted_data[i]);
+    string current=inserted_data[i];
+    transform(current.begin(), current.end(), current.begin(), ::tolower);
+    expected_results[i].push_back(current);
+    
+  }
+
+  char col_results[NUM_COLS][BUFFER_LENGTH];
+  SQLLEN col_len[NUM_COLS];
+  vector<tuple<int, int, SQLPOINTER, int, SQLLEN* >> bind_columns = {};
+
+  // initialization for bind_columns
+  for (int i = 0; i < operations_query.size(); i++) {
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    bind_columns.push_back(tuple_to_insert);
+  }
+
+  string insert_string{}; 
+  string comma{};
+  
+  // insert_string initialization
+  for (int i = 0; i< inserted_pk.size() ; ++i) {
+    insert_string += comma + "(" +"'"+ inserted_pk[i] + "'"+","+"'" + inserted_data[i] + "'"+")";
+    comma = ",";
+  }
+
+  // Create table
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_NTEXT));
+  odbcHandler.CloseStmt();
+
+  // Insert valid values into the table and assert affected rows
+  odbcHandler.ExecQuery(InsertStatement(TABLE_NAME, insert_string));
+  rcode = SQLRowCount(odbcHandler.GetStatementHandle(), &affected_rows);
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+  ASSERT_EQ(affected_rows, inserted_data.size());
+  
+
+  // Make sure inserted values are correct and operations
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(bind_columns));
+
+  for (int i = 0; i < inserted_data.size(); ++i) {
+    
+    odbcHandler.CloseStmt();
+    odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, operations_query, vector<string> {}, COL_NAMES[0] + "=" + "'"+inserted_pk[i]+"'"));
+    ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(bind_columns));
+
+    rcode = SQLFetch(odbcHandler.GetStatementHandle());
+    ASSERT_EQ(rcode, SQL_SUCCESS);
+
+    for (int j = 0; j < operations_query.size(); j++) {
+
+      ASSERT_EQ(col_len[j], expected_results[i][j].size());
+      ASSERT_EQ(col_results[j], expected_results[i][j]);
+    }
+  }
+
+  // Assert that there is no more data
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_NO_DATA);
+
+  odbcHandler.CloseStmt();
+  odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
+}
+
+
+
 TEST_F(PSQL_DataTypes_Nvarchar, View_creation) {
 
   const string VIEW_QUERY = "SELECT * FROM " + TABLE_NAME;
@@ -636,4 +749,261 @@ TEST_F(PSQL_DataTypes_Nvarchar, View_creation) {
 
   odbcHandler.CloseStmt();
   odbcHandler.ExecQuery(DropObjectStatement("VIEW", VIEW_NAME));
+}
+
+TEST_F(PSQL_DataTypes_Nvarchar, Table_Composite_Keys) {
+  const vector<pair<string, string>> TABLE_COLUMNS = {
+    {COL_NAMES[0], "int" },
+    {COL_NAMES[1], DATATYPE}
+  };
+  const string PKTABLE_NAME = TABLE_NAME.substr(TABLE_NAME.find('.') + 1, TABLE_NAME.length());
+  const string SCHEMA_NAME = TABLE_NAME.substr(0, TABLE_NAME.find('.'));
+
+  const vector<string> PK_COLUMNS = {
+    COL_NAMES[0],
+    COL_NAMES[1]
+  };
+
+  string table_constraints{"PRIMARY KEY ("};
+  string comma{};
+  for (int i = 0; i < PK_COLUMNS.size(); i++) {
+    table_constraints += comma + PK_COLUMNS[i];
+    comma = ",";
+  };
+  table_constraints += ")";
+
+  const int PK_BYTES_EXPECTED = 4;
+  const int BUFFER_LENGTH=8192;
+  int pk;
+  char data[BUFFER_LENGTH];
+  SQLLEN pk_len;
+  SQLLEN data_len;
+  SQLLEN affected_rows;
+
+  RETCODE rcode;
+  OdbcHandler odbcHandler;
+
+  const vector<string> VALID_INSERTED_VALUES = {
+    STRING_1,
+    STRING_1,
+    STRING_20,
+    STRING_20
+  };
+  const int NUM_OF_INSERTS = VALID_INSERTED_VALUES.size();
+
+  string insert_string{};
+  comma = "";
+
+  for (int i = 0; i < NUM_OF_INSERTS; i++) {
+    insert_string += comma + "(" + std::to_string(i) + ", '" + VALID_INSERTED_VALUES[i] + "')";
+    comma = ",";
+  }
+
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS, table_constraints));
+  odbcHandler.CloseStmt();
+
+  // Check if composite key still matches after creation
+  char table_name[BUFFER_LENGTH];
+  char column_name[BUFFER_LENGTH];
+  int key_sq{};
+  char pk_name[BUFFER_LENGTH];
+
+  const vector<tuple<int, int, SQLPOINTER, int>> CONSTRAINT_BIND_COLUMNS = {
+    {3, SQL_C_CHAR, table_name, BUFFER_LENGTH},
+    {4, SQL_C_CHAR, column_name, BUFFER_LENGTH},
+    {5, SQL_C_ULONG, &key_sq, BUFFER_LENGTH},
+    {6, SQL_C_CHAR, pk_name, BUFFER_LENGTH}
+  };
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(CONSTRAINT_BIND_COLUMNS));
+
+  rcode = SQLPrimaryKeys(odbcHandler.GetStatementHandle(), NULL, 0, (SQLCHAR *)SCHEMA_NAME.c_str(), SQL_NTS, (SQLCHAR *)PKTABLE_NAME.c_str(), SQL_NTS);
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+
+  int curr_sq{0};
+  for (auto columnName : PK_COLUMNS) {
+    ++curr_sq;
+    rcode = SQLFetch(odbcHandler.GetStatementHandle());
+    ASSERT_EQ(rcode, SQL_SUCCESS);
+
+    ASSERT_EQ(string(table_name), PKTABLE_NAME);
+    ASSERT_EQ(string(column_name), columnName);
+    ASSERT_EQ(key_sq, curr_sq);
+  }
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_NO_DATA);
+  odbcHandler.CloseStmt();
+
+  // Insert valid values into the table and assert affected rows
+  odbcHandler.ExecQuery(InsertStatement(TABLE_NAME, insert_string));
+
+  rcode = SQLRowCount(odbcHandler.GetStatementHandle(), &affected_rows);
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+  ASSERT_EQ(affected_rows, NUM_OF_INSERTS);
+
+  odbcHandler.CloseStmt();
+
+  // Select all from the tables and assert that the following attributes of the type is correct:
+  odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, {"*"}, vector<string>{COL_NAMES[0]}));
+
+  // Make sure inserted values are correct
+  const vector<tuple<int, int, SQLPOINTER, int, SQLLEN *>> BIND_COLUMNS = {
+    {1, SQL_C_LONG, &pk, 0, &pk_len},
+    {2, SQL_C_CHAR, &data, BUFFER_LENGTH, &data_len}
+  };
+
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(BIND_COLUMNS));
+
+  for (int i = 0; i < NUM_OF_INSERTS; i++) {
+    rcode = SQLFetch(odbcHandler.GetStatementHandle()); // retrieve row-by-row
+    ASSERT_EQ(rcode, SQL_SUCCESS);
+    ASSERT_EQ(pk_len, PK_BYTES_EXPECTED);
+    ASSERT_EQ(pk, i);
+    if (VALID_INSERTED_VALUES[i] != "NULL") {
+      ASSERT_EQ(data_len, VALID_INSERTED_VALUES[i].size());
+      ASSERT_EQ(data, VALID_INSERTED_VALUES[i]);
+    }
+    else {
+      ASSERT_EQ(data_len, SQL_NULL_DATA);
+    }
+  }
+
+  // Assert that there is no more data
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_NO_DATA);
+
+  odbcHandler.CloseStmt();
+
+  // Attempt to insert values that violates composite constraint and assert that they all fail
+  for (int i = 0; i < NUM_OF_INSERTS; i++) {
+    insert_string += comma + "(" + std::to_string(i) + "," + VALID_INSERTED_VALUES[i] + ")";
+    comma = ",";
+  }
+
+  rcode = SQLExecDirect(odbcHandler.GetStatementHandle(), (SQLCHAR *)InsertStatement(TABLE_NAME, insert_string).c_str(), SQL_NTS);
+  ASSERT_EQ(rcode, SQL_ERROR);
+
+  odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
+}
+
+TEST_F(PSQL_DataTypes_Nvarchar, Table_Unique_Constraints) {
+  const vector<pair<string, string>> TABLE_COLUMNS = {
+    {COL_NAMES[0], "INT PRIMARY KEY" },
+    {COL_NAMES[1], DATATYPE + " UNIQUE"}
+  };
+ 
+ 
+  const string UNIQUE_COLUMN_NAME = COL_NAMES[1];
+
+  const int PK_BYTES_EXPECTED = 4;
+  const int BUFFER_LENGTH=8192;
+  int pk;
+  char data[BUFFER_LENGTH];
+  SQLLEN pk_len;
+  SQLLEN data_len;
+  SQLLEN affected_rows;
+
+  RETCODE rcode;
+  OdbcHandler odbcHandler;
+
+  const vector<string> VALID_INSERTED_VALUES = {
+    "0",
+    "1"
+  };
+  const int NUM_OF_INSERTS = VALID_INSERTED_VALUES.size();
+
+  const vector<tuple<int, int, SQLPOINTER, int, SQLLEN *>> BIND_COLUMNS = {
+    {1, SQL_C_LONG, &pk, 0, &pk_len},
+    {2, SQL_C_CHAR, &data, BUFFER_LENGTH, &data_len}
+  };
+
+  string insert_string{};
+  string comma{};
+
+  for (int i = 0; i < NUM_OF_INSERTS; i++) {
+    insert_string += comma + "(" + std::to_string(i) + "," + VALID_INSERTED_VALUES[i] + ")";
+    comma = ",";
+  }
+
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
+  odbcHandler.CloseStmt();
+
+  // Check if unique constraint still matches after creation
+  char column_name[BUFFER_LENGTH];
+  char type_name[BUFFER_LENGTH];
+
+  vector<tuple<int, int, SQLPOINTER, int>> table_BIND_COLUMNS = {
+    {1, SQL_C_CHAR, column_name, BUFFER_LENGTH},
+  };
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(table_BIND_COLUMNS));
+
+  const string PK_QUERY =
+    "SELECT C.COLUMN_NAME FROM "
+    "INFORMATION_SCHEMA.TABLE_CONSTRAINTS T "
+    "JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE C "
+    "ON C.CONSTRAINT_NAME=T.CONSTRAINT_NAME "
+    "WHERE "
+    "C.TABLE_NAME='" + TABLE_NAME.substr(TABLE_NAME.find('.') + 1, TABLE_NAME.length()) + "' "
+    "AND T.CONSTRAINT_TYPE='UNIQUE'";
+  odbcHandler.ExecQuery(PK_QUERY);
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+  ASSERT_EQ(string(column_name), UNIQUE_COLUMN_NAME);
+
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  EXPECT_EQ(rcode, SQL_NO_DATA);
+
+  odbcHandler.CloseStmt();
+
+  // Insert valid values into the table and assert affected rows
+  odbcHandler.ExecQuery(InsertStatement(TABLE_NAME, insert_string));
+
+  rcode = SQLRowCount(odbcHandler.GetStatementHandle(), &affected_rows);
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+  ASSERT_EQ(affected_rows, NUM_OF_INSERTS);
+
+  odbcHandler.CloseStmt();
+
+  // Select all from the tables and assert that the following attributes of the type is correct:
+  odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, {"*"}, vector<string>{COL_NAMES[1]}));
+
+  // Make sure inserted values are correct
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(BIND_COLUMNS));
+
+  for (int i = 0; i < NUM_OF_INSERTS; i++) {
+    rcode = SQLFetch(odbcHandler.GetStatementHandle()); // retrieve row-by-row
+    ASSERT_EQ(rcode, SQL_SUCCESS);
+    ASSERT_EQ(pk_len, PK_BYTES_EXPECTED);
+    ASSERT_EQ(pk, i);
+
+    if (VALID_INSERTED_VALUES[i] != "NULL") {
+      ASSERT_EQ(data_len, VALID_INSERTED_VALUES[i].size());
+      ASSERT_EQ(data, VALID_INSERTED_VALUES[i]);
+    }
+    else {
+      ASSERT_EQ(data_len, SQL_NULL_DATA);
+    }
+  }
+
+  // Assert that there is no more data
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_NO_DATA);
+
+  odbcHandler.CloseStmt();
+
+  // Attempt to insert
+  const vector<string> INVALID_INSERTED_VALUES = {
+    "0",
+    "1"
+  };
+  const int NUM_OF_INVALID = INVALID_INSERTED_VALUES.size();
+
+  // Attempt to insert values that violates unique constraint and assert that they all fail
+  for (int i = NUM_OF_INVALID; i < 2 * NUM_OF_INVALID; i++) {
+    string insert_string = "(" + std::to_string(i) + "," + INVALID_INSERTED_VALUES[i - NUM_OF_INVALID] + ")";
+
+    rcode = SQLExecDirect(odbcHandler.GetStatementHandle(), (SQLCHAR *)InsertStatement(TABLE_NAME, insert_string).c_str(), SQL_NTS);
+    ASSERT_EQ(rcode, SQL_ERROR);
+  }
+
+  odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
