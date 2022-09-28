@@ -493,19 +493,19 @@ TEST_F(PSQL_DataTypes_BigInt, Comparison_Functions) {
 
   // initialization of expected_results
   vector<long long int> expected_results = {};
-  long long int min_expected = 0, max_expected = 0, sum = 0;
-  for (int i = 0; i < NUM_OF_DATA; i++) {
-    long long int currMin = StringToBigInt(INSERTED_DATA[min_expected]);
-    long long int currMax = StringToBigInt(INSERTED_DATA[max_expected]);
-    long long int curr = StringToBigInt(INSERTED_DATA[i]);
+  long long int curr = StringToBigInt(INSERTED_DATA[0]);
+  long long int min_expected = curr, max_expected = curr, sum = curr;
+  for (int i = 1; i < NUM_OF_DATA; i++) {
+    curr = StringToBigInt(INSERTED_DATA[i]);
     sum += curr;
 
-    min_expected = curr < currMin  ? i : min_expected;
-    max_expected = curr > currMax  ? i : max_expected;
+    min_expected = curr < min_expected ? curr : min_expected;
+    max_expected = curr > max_expected ? curr : max_expected;
   }
-  expected_results.push_back(StringToBigInt(INSERTED_DATA[min_expected]));
-  expected_results.push_back(StringToBigInt(INSERTED_DATA[max_expected]));
+  expected_results.push_back(min_expected);
+  expected_results.push_back(max_expected);
   expected_results.push_back(sum);
+  
 
   long long int col_results[NUM_OF_OPERATIONS];
   SQLLEN col_len[NUM_OF_OPERATIONS];
