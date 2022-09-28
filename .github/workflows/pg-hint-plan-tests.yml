@@ -1,7 +1,7 @@
 name: pg-hint-plan Tests
 on: [push]
 concurrency: # Cancel previous runs in the same branch
-  group: environment-${{ github.ref }}
+  group: pg-hint-plan-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
