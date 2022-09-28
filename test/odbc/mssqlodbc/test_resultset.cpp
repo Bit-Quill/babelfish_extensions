@@ -31,25 +31,25 @@ const string SELECT_RESULT_SET_RO_TABLE1 = SelectStatement(RESULT_SET_RO_TABLE1,
 class MSSQL_Result_Set : public testing::Test {
 
   void SetUp() override {
-    if(!Drivers::DriverExists(ServerType::MSSQL)) {
+    if (!Drivers::DriverExists(ServerType::MSSQL)) {
       GTEST_SKIP() << "MSSQL Driver not present: skipping all tests for this fixture.";
     }
   }
 
   protected:
     static void SetUpTestSuite() {
-      if(!Drivers::DriverExists(ServerType::MSSQL)) {
+      if (!Drivers::DriverExists(ServerType::MSSQL)) {
         GTEST_SKIP() << "MSSQL Driver not present: skipping set up.";
       }
       OdbcHandler test_setup(Drivers::GetDriver(ServerType::MSSQL));
 
-      test_setup.ConnectAndExecQuery(DropObjectStatement("TABLE",RESULT_SET_RO_TABLE1));
+      test_setup.ConnectAndExecQuery(DropObjectStatement("TABLE", RESULT_SET_RO_TABLE1));
       test_setup.ExecQuery(CreateTableStatement(RESULT_SET_RO_TABLE1, RO_TABLE_COLUMNS));
       test_setup.ExecQuery(InsertStatement(RESULT_SET_RO_TABLE1, "(1, 'hello1', 1.1), (2, 'hello2', 2.2), (3, 'hello3', 3.3), (4, 'hello4', 4.4)"));
     }
 
     static void TearDownTestSuite() {
-      if(!Drivers::DriverExists(ServerType::MSSQL)) {
+      if (!Drivers::DriverExists(ServerType::MSSQL)) {
         GTEST_SKIP() << "MSSQL Driver not present: skipping tear down.";
       }
       OdbcHandler test_cleanup(Drivers::GetDriver(ServerType::MSSQL));

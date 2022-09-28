@@ -19,7 +19,7 @@ static const  vector<pair<string,string>> RO_TABLE_COLUMNS = {
 class MSSQL_Prepared_Statements : public testing::Test{
 
   void SetUp() override {
-    if(!Drivers::DriverExists(ServerType::MSSQL)) {
+    if (!Drivers::DriverExists(ServerType::MSSQL)) {
       GTEST_SKIP() << "MSSQL Driver not present: skipping all tests for this fixture.";
     }
   }
@@ -27,23 +27,23 @@ class MSSQL_Prepared_Statements : public testing::Test{
   protected:
 
     static void SetUpTestSuite() {
-      if(!Drivers::DriverExists(ServerType::MSSQL)) {
+      if (!Drivers::DriverExists(ServerType::MSSQL)) {
         GTEST_SKIP() << "MSSQL Driver not present: skipping set up.";
       }
 
       OdbcHandler test_setup(Drivers::GetDriver(ServerType::MSSQL));
-      test_setup.ConnectAndExecQuery(DropObjectStatement("TABLE",SQLPREPTABLE_RO_1));
+      test_setup.ConnectAndExecQuery(DropObjectStatement("TABLE", SQLPREPTABLE_RO_1));
       test_setup.ExecQuery(CreateTableStatement(SQLPREPTABLE_RO_1, RO_TABLE_COLUMNS));
       test_setup.ExecQuery(InsertStatement(SQLPREPTABLE_RO_1, "(1, 'hello1', 1.1), (2, 'hello2', 2.2), (3, 'hello3', 3.3), (4, 'hello4', 4.4)"));
     }
 
     static void TearDownTestSuite() {
-      if(!Drivers::DriverExists(ServerType::MSSQL)) {
+      if (!Drivers::DriverExists(ServerType::MSSQL)) {
         GTEST_SKIP() << "MSSQL Driver not present: skipping tear down.";
       }
 
       OdbcHandler test_cleanup(Drivers::GetDriver(ServerType::MSSQL));
-      test_cleanup.ConnectAndExecQuery(DropObjectStatement("TABLE",SQLPREPTABLE_RO_1));
+      test_cleanup.ConnectAndExecQuery(DropObjectStatement("TABLE", SQLPREPTABLE_RO_1));
     }
 };
 

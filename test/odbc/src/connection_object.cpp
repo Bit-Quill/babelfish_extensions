@@ -1,14 +1,14 @@
 #include "connection_object.h"
 
 ConnectionObject::ConnectionObject(string driver, string server, string port, string uid, string pwd, string dbname) {
-    db_driver_ = driver;
-    db_server_ = server;
-    db_port_ = port;
-    db_uid_ = uid;
-    db_pwd_ = pwd;
-    db_dbname_ = dbname;
-    
-    connection_string_ = "DRIVER={" + db_driver_ + "};SERVER=" + db_server_ + ";PORT=" + db_port_ + ";UID=" + db_uid_ + ";PWD=" + db_pwd_ + ";DATABASE=" + db_dbname_;
+  db_driver_ = driver;
+  db_server_ = server;
+  db_port_ = port;
+  db_uid_ = uid;
+  db_pwd_ = pwd;
+  db_dbname_ = dbname;
+  
+  connection_string_ = "DRIVER={" + db_driver_ + "};SERVER=" + db_server_ + ";PORT=" + db_port_ + ";UID=" + db_uid_ + ";PWD=" + db_pwd_ + ";DATABASE=" + db_dbname_;
 }
 
 ConnectionObject::~ConnectionObject() {

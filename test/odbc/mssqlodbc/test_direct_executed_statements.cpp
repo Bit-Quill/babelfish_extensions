@@ -11,7 +11,7 @@ static const string DIR_STMT_RO_TABLE1 = "DIR_EXEC_STMT_TABLE_RO_1";
 class MSSQL_Direct_Executed_Statements : public testing::Test{
 
   void SetUp() override {
-    if(!Drivers::DriverExists(ServerType::MSSQL)) {
+    if (!Drivers::DriverExists(ServerType::MSSQL)) {
       GTEST_SKIP() << "MSSQL Driver not present: skipping all tests for this fixture.";
     }
   }
@@ -19,23 +19,23 @@ class MSSQL_Direct_Executed_Statements : public testing::Test{
   protected:
 
     static void SetUpTestSuite() {
-      if(!Drivers::DriverExists(ServerType::MSSQL)) {
+      if (!Drivers::DriverExists(ServerType::MSSQL)) {
         GTEST_SKIP() << "MSSQL Driver not present: skipping set up.";
       }
       OdbcHandler test_setup(Drivers::GetDriver(ServerType::MSSQL));
 
-      test_setup.ConnectAndExecQuery(DropObjectStatement("TABLE",DIR_STMT_RO_TABLE1));
+      test_setup.ConnectAndExecQuery(DropObjectStatement("TABLE", DIR_STMT_RO_TABLE1));
       test_setup.ExecQuery(CreateTableStatement(DIR_STMT_RO_TABLE1, {{"id", "int"}}));
       test_setup.ExecQuery(InsertStatement(DIR_STMT_RO_TABLE1, "(1), (2), (3)"));
     }
 
     static void TearDownTestSuite() {
-      if(!Drivers::DriverExists(ServerType::MSSQL)) {
+      if (!Drivers::DriverExists(ServerType::MSSQL)) {
         GTEST_SKIP() << "MSSQL Driver not present: skipping tear down.";
       }
       OdbcHandler test_cleanup(Drivers::GetDriver(ServerType::MSSQL));
 
-      test_cleanup.ConnectAndExecQuery(DropObjectStatement("TABLE",DIR_STMT_RO_TABLE1));
+      test_cleanup.ConnectAndExecQuery(DropObjectStatement("TABLE", DIR_STMT_RO_TABLE1));
     }
 };
 

@@ -17,8 +17,7 @@ void Drivers::SetDrivers() {
   map<string, string> config_file_values = ParseConfigFile();
 
   static map<ServerType, string>::iterator it;
-  for (it = server_to_odbc_types.begin(); it != server_to_odbc_types.end(); it++)
-  {
+  for (it = server_to_odbc_types.begin(); it != server_to_odbc_types.end(); it++) {
     string env_db_driver_ = it->second + "_ODBC_DRIVER_NAME";
     string env_db_server_ = it->second + "_BABEL_DB_SERVER";
     string env_db_port_ = it->second + "_BABEL_DB_PORT";

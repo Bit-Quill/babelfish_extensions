@@ -18,7 +18,7 @@ using std::tuple;
 class MSSQL_Metadata: public testing::Test {
 
   void SetUp() override {
-    if(!Drivers::DriverExists(ServerType::MSSQL)) {
+    if (!Drivers::DriverExists(ServerType::MSSQL)) {
       GTEST_SKIP() << "MSSQL Driver not present: skipping all tests for this fixture.";
     }
   }
@@ -815,8 +815,8 @@ TEST_F(MSSQL_Metadata, SQLGetTypeInfo) {
 // DISABLED: PLEASE SEE BABELFISH-132
 TEST_F(MSSQL_Metadata, DISABLED_SQLTables_Catalogs) {
 	 
-	OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
-	RETCODE rcode = -1;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
+  RETCODE rcode = -1;
 
   ASSERT_NO_FATAL_FAILURE(odbcHandler.Connect(true));
   rcode = SQLTables( odbcHandler.GetStatementHandle(), (SQLCHAR*)SQL_ALL_CATALOGS, SQL_NTS, (SQLCHAR*)"", SQL_NTS, (SQLCHAR*)"", SQL_NTS, (SQLCHAR*)"", SQL_NTS );
@@ -839,8 +839,8 @@ TEST_F(MSSQL_Metadata, DISABLED_SQLTables_Catalogs) {
 // DISABLED: PLEASE SEE BABELFISH-132
 TEST_F(MSSQL_Metadata, DISABLED_SQLTables_Tables) {
 	 
-	OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
-	RETCODE rcode = -1;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
+  RETCODE rcode = -1;
 
   const vector<string> testTables = {
     {"meta_table1"}, 
@@ -886,8 +886,8 @@ TEST_F(MSSQL_Metadata, DISABLED_SQLTables_Tables) {
 // DISABLED: PLEASE SEE BABELFISH-132
 TEST_F(MSSQL_Metadata, DISABLED_SQLTables_Views) {
 	 
-	OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
-	RETCODE rcode = -1;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::MSSQL));
+  RETCODE rcode = -1;
 
   const string testTable {"meta_table"};
 

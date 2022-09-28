@@ -17,7 +17,7 @@ const string NULL_STR = "<NULL>";
 class MSSQL_Data_Types : public testing::Test {
 
   void SetUp() override {
-    if(!Drivers::DriverExists(ServerType::MSSQL)) {
+    if (!Drivers::DriverExists(ServerType::MSSQL)) {
       GTEST_SKIP() << "MSSQL Driver not present: skipping all tests for this fixture.";
     }
   }
