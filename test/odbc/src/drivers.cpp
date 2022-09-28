@@ -87,7 +87,7 @@ map<string, string> Drivers::ParseConfigFile() {
 }
 
 bool Drivers::IsValidConnectionObject(string driver, string server, string port, string uid, string pwd, string dbname) {
-  if (driver.empty() || server.empty() || port.empty() || uid.empty() || dbname.empty()) {
+  if (server.empty() || port.empty() || uid.empty() || dbname.empty()) {
     return false;
   }
   return true;
