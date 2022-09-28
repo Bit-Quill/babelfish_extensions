@@ -487,7 +487,8 @@ TEST_F(PSQL_DataTypes_BigInt, Comparison_Functions) {
   const vector<string> OPERATIONS_QUERY = {
     "MIN(" + COL2_NAME + ")",
     "MAX(" + COL2_NAME + ")",
-    "SUM(" + COL2_NAME + ")"
+    "SUM(" + COL2_NAME + ")",
+    "AVG(" + COL2_NAME + ")"
   };
   const int NUM_OF_OPERATIONS = OPERATIONS_QUERY.size();
 
@@ -499,12 +500,13 @@ TEST_F(PSQL_DataTypes_BigInt, Comparison_Functions) {
     curr = StringToBigInt(INSERTED_DATA[i]);
     sum += curr;
 
-    min_expected = curr < min_expected ? curr : min_expected;
-    max_expected = curr > max_expected ? curr : max_expected;
+    min_expected = std::min(curr, min_expected);
+    max_expected = std::max(curr, max_expected);
   }
   expected_results.push_back(min_expected);
   expected_results.push_back(max_expected);
   expected_results.push_back(sum);
+  expected_results.push_back(sum / NUM_OF_DATA);
   
 
   long long int col_results[NUM_OF_OPERATIONS];
