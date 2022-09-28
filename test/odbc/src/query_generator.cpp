@@ -113,7 +113,6 @@ string UpdateTableStatement(const string &table_name, const vector<pair<string, 
   return result;
 }
 
-
 string CreateFunctionStatement(const string &function_name, const string &function_definition) {
 
   return string {"CREATE FUNCTION " + function_name + " \n" + function_definition + ";"};
