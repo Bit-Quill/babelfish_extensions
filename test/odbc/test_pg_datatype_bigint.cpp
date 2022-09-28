@@ -371,6 +371,124 @@ TEST_F(PSQL_DataTypes_BigInt, Update_Fail) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
+TEST_F(PSQL_DataTypes_BigInt, Arithmetic_Operators) {
+  vector<pair<string, string>> TABLE_COLUMNS = {
+    {COL1_NAME, DATATYPE_NAME + " PRIMARY KEY"},
+    {COL2_NAME, DATATYPE_NAME}
+  };
+
+  const int BYTES_EXPECTED = 8;
+
+  long long int pk;
+  long long int data;
+  SQLLEN pk_len;
+  SQLLEN data_len;
+  SQLLEN affected_rows;
+
+  RETCODE rcode;
+  OdbcHandler odbcHandler;
+
+  const vector<string> INSERTED_PK = {
+    "-73708",
+    "123",
+    "233"
+  };
+
+  const vector<string> INSERT_DATA = {
+    "2",
+    "3",
+    "5"
+  };
+  const int NUM_OF_DATA = INSERT_DATA.size();
+
+  const vector<string> OPERATIONS_QUERY = {
+    COL1_NAME + "+" + COL2_NAME,
+    COL1_NAME + "-" + COL2_NAME,
+    COL1_NAME + "/" + COL2_NAME,
+    COL1_NAME + "*" + COL2_NAME,
+
+    COL1_NAME + "^" + COL2_NAME, // Power
+    "|/" + COL2_NAME,            // Square Root
+    "||/" + COL2_NAME,           // Cube Root
+    "@" + COL1_NAME,             // Absolute Value
+  };
+  const int NUM_OF_OPERATIONS = OPERATIONS_QUERY.size();
+
+  vector<vector<long long int>> expected_results = {};
+
+  // initialization of expected_results
+  for (int i = 0; i < NUM_OF_DATA; i++) {
+    expected_results.push_back({});
+    long long int data_1 = StringToBigInt(INSERTED_PK[i]);
+    long long int data_2 = StringToBigInt(INSERT_DATA[i]);
+
+    expected_results[i].push_back(data_1 + data_2);
+    expected_results[i].push_back(data_1 - data_2);
+    expected_results[i].push_back(data_1 / data_2);
+    expected_results[i].push_back(data_1 * data_2);
+
+    expected_results[i].push_back(pow(data_1, data_2));
+    expected_results[i].push_back(sqrt(data_2));
+    expected_results[i].push_back(cbrt(data_2));
+    expected_results[i].push_back(abs(data_1));
+  }
+
+  long long int col_results[NUM_OF_OPERATIONS];
+  SQLLEN col_len[NUM_OF_OPERATIONS];
+  vector<tuple<int, int, SQLPOINTER, int, SQLLEN *>> BIND_COLUMNS = {};
+
+  // initialization for BIND_COLUMNS
+  for (int i = 0; i < NUM_OF_OPERATIONS; i++) {
+    tuple<int, int, SQLPOINTER, int, SQLLEN *> tuple_to_insert(i + 1, SQL_C_SBIGINT, (SQLPOINTER)&col_results[i], 0, &col_len[i]);
+    BIND_COLUMNS.push_back(tuple_to_insert);
+  }
+
+  string insert_string{};
+  string comma{};
+
+  // insert_string initialization
+  for (int i = 0; i < NUM_OF_DATA; i++) {
+    insert_string += comma + "(" + INSERTED_PK[i] + "," + INSERT_DATA[i] + ")";
+    comma = ",";
+  }
+
+  // Create table
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
+  odbcHandler.CloseStmt();
+
+  // Insert valid values into the table and assert affected rows
+  odbcHandler.ExecQuery(InsertStatement(TABLE_NAME, insert_string));
+
+  rcode = SQLRowCount(odbcHandler.GetStatementHandle(), &affected_rows);
+  ASSERT_EQ(rcode, SQL_SUCCESS);
+  ASSERT_EQ(affected_rows, NUM_OF_DATA);
+
+  // Make sure inserted values are correct and operations
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(BIND_COLUMNS));
+
+  odbcHandler.CloseStmt();
+  odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, OPERATIONS_QUERY, vector<string>{COL1_NAME}));
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(BIND_COLUMNS));
+
+  for (int i = 0; i < NUM_OF_DATA; i++) {
+    rcode = SQLFetch(odbcHandler.GetStatementHandle());
+    ASSERT_EQ(rcode, SQL_SUCCESS);
+
+    for (int j = 0; j < NUM_OF_OPERATIONS; j++) {
+      std::cout << "[" << i << ", " << j << "]\n";
+      ASSERT_EQ(col_len[j], BYTES_EXPECTED);
+      ASSERT_EQ(col_results[j], expected_results[i][j]);
+    }
+  }
+
+  // Assert that there is no more data
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_NO_DATA);
+
+  odbcHandler.CloseStmt();
+  odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
+}
+
 TEST_F(PSQL_DataTypes_BigInt, Comparison_Operators) {
   const vector<pair<string, string>> TABLE_COLUMNS = {
     {COL1_NAME, DATATYPE_NAME + " PRIMARY KEY"},
