@@ -30,7 +30,7 @@ PSQL_ODBC_DRIVER_NAME=ODBC_Driver_17_PostgreSQL
 
 ### Using environment variables
 
-The environment variables will have the same name as the keys in the config file (e.g. MSSQL_BABEL_DB_SERVER will correspond with the server name for the SQL Server connection). When running the build commands, you may set the environment variable in you .zshrc file (or .bashprofile) or before executing the main file like the example below.
+The environment variables will have the same name as the keys in the config file (e.g. MSSQL_BABEL_DB_SERVER will correspond with the server name for the SQL Server connection). When running the build commands, you may set the environment variable in your .zshrc file (or .bashprofile) or before executing the main file like the example below.
 
 ```
 // In the odbc directory
@@ -52,8 +52,8 @@ cmake --build build
 
 To disable a test, simply put "DISABLED_" on the second parameter of the TEST_F descriptor.
 
-For example, if I wanted to disable a test labled TEST_F(testsuite, notWorkingTest). I would change it to
-TEST_F(testsuite, DISABLED_notWorkingTest)
+For example, to disable a test labled `TEST_F(testsuite, notWorkingTest)` it would be changed to
+`TEST_F(testsuite, DISABLED_notWorkingTest)`.
 
 ## Controlling which tests should run
 
