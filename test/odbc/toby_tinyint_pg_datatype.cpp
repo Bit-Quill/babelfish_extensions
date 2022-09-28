@@ -400,109 +400,11 @@ TEST_F(PSQL_DataTypes_Tinyint, Update_Fail) {
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
-// TEST_F(PSQL_DataTypes_Tinyint, DISABLED_Arithmetic_Operators) {
-
-//   const int BYTES_EXPECTED = 1;
-
-//   unsigned char pk;
-//   unsigned char data;
-//   SQLLEN pk_len;
-//   SQLLEN data_len;
-//   SQLLEN affected_rows;
-
-//   RETCODE rcode;
-//   OdbcHandler odbcHandler;
-
-//   vector <string> inserted_pk = {
-//     "20",
-//     "30"
-//   };
-
-//   vector <string> inserted_data = {
-//     "40",
-//     "20"
-//   };
-
-//   vector <string> operations_query = {
-//     COL1_NAME + "+" + COL2_NAME,
-//     COL1_NAME + "-" + COL2_NAME,
-//     COL1_NAME + "*" + COL2_NAME,
-//     COL1_NAME + "/" + COL2_NAME
-//   };
-
-//   vector<vector<unsigned char>>expected_results = {{},{}};
-
-//   // initialization of expected_results
-//   for (int i = 0; i < inserted_pk.size(); i++) {
-//     expected_results[i].push_back(StringToTinyInt(inserted_pk[i]) + StringToTinyInt(inserted_data[i]));
-//     expected_results[i].push_back(StringToTinyInt(inserted_pk[i]) - StringToTinyInt(inserted_data[i]));
-//     expected_results[i].push_back(StringToTinyInt(inserted_pk[i]) * StringToTinyInt(inserted_data[i]));
-//     expected_results[i].push_back(StringToTinyInt(inserted_pk[i]) / StringToTinyInt(inserted_data[i]));
-//   }
-
-//   unsigned char col_results[operations_query.size()];
-//   SQLLEN col_len[operations_query.size()];
-//   vector<tuple<int, int, SQLPOINTER, int, SQLLEN* >> bind_columns = {};
-
-//   // initialization for bind_columns
-//   for (int i = 0; i < operations_query.size(); i++) {
-//     tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_STINYINT, (SQLPOINTER) &col_results[i], 0, &col_len[i]);
-//     bind_columns.push_back(tuple_to_insert);
-//   }
-
-//   string insert_string{}; 
-//   string comma{};
-  
-//   // insert_string initialization
-//   for (int i = 0; i< inserted_pk.size() ; ++i) {
-//     insert_string += comma + "(" + inserted_pk[i] + "," + inserted_data[i] + ")";
-//     comma = ",";
-//   }
-
-//   // Create table
-//   odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_TINYINT));
-//   odbcHandler.CloseStmt();
-
-//   // Insert valid values into the table and assert affected rows
-//   odbcHandler.ExecQuery(InsertStatement(TABLE_NAME, insert_string));
- 
-//   rcode = SQLRowCount(odbcHandler.GetStatementHandle(), &affected_rows);
-//   ASSERT_EQ(rcode, SQL_SUCCESS);
-//   ASSERT_EQ(affected_rows, inserted_data.size());
-  
-
-//   // Make sure inserted values are correct and operations
-//   ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(bind_columns));
-
-//   for (int i = 0; i < inserted_data.size(); ++i) {
-    
-//     odbcHandler.CloseStmt();
-//     odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, operations_query, vector<string> {}, COL1_NAME + "=" + inserted_pk[i]));
-//     ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(bind_columns));
-
-//     rcode = SQLFetch(odbcHandler.GetStatementHandle());
-//     ASSERT_EQ(rcode, SQL_SUCCESS);
-
-//     for (int j = 0; j < operations_query.size(); j++) {
-
-//       ASSERT_EQ(col_len[j], BYTES_EXPECTED);
-//       ASSERT_EQ(col_results[j], expected_results[i][j]);
-//     }
-//   }
-
-//   // Assert that there is no more data
-//   rcode = SQLFetch(odbcHandler.GetStatementHandle());
-//   ASSERT_EQ(rcode, SQL_NO_DATA);
-
-//   odbcHandler.CloseStmt();
-//   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
-// }
-
-TEST_F(PSQL_DataTypes_Tinyint, Arithmetic_Operator) {
+TEST_F(PSQL_DataTypes_Tinyint,Arithmetic_Operators) {
 
   const int BYTES_EXPECTED = 1;
-  const int DOUBLE_BYTES_EXPECTED=8;
-  int pk;
+
+  unsigned char pk;
   unsigned char data;
   SQLLEN pk_len;
   SQLLEN data_len;
@@ -512,30 +414,22 @@ TEST_F(PSQL_DataTypes_Tinyint, Arithmetic_Operator) {
   OdbcHandler odbcHandler;
 
   vector <string> inserted_pk = {
-    "4",
-    "2"
+    "20",
+    "30"
   };
 
   vector <string> inserted_data = {
-    "3",
-    "5"
+    "40",
+    "20"
   };
 
   vector <string> operations_query = {
     COL1_NAME + "+" + COL2_NAME,
     COL1_NAME + "-" + COL2_NAME,
     COL1_NAME + "*" + COL2_NAME,
-    COL1_NAME + "/" + COL2_NAME,
-    "ABS(" + COL1_NAME + ")",
-    "POWER(" + COL1_NAME+","+COL2_NAME + ")"
+    COL1_NAME + "/" + COL2_NAME
   };
 
-  vector <string> double_operations_query= {
-    "||/ "+COL1_NAME,
-    "LOG(" + COL1_NAME + ")"
-  };
-
-  vector<vector<double>>double_expected_results = {{},{}};
   vector<vector<unsigned char>>expected_results = {{},{}};
 
   // initialization of expected_results
@@ -546,29 +440,18 @@ TEST_F(PSQL_DataTypes_Tinyint, Arithmetic_Operator) {
     expected_results[i].push_back(StringToTinyInt(inserted_pk[i]) / StringToTinyInt(inserted_data[i]));
     expected_results[i].push_back(abs(StringToTinyInt(inserted_pk[i])));
     expected_results[i].push_back(pow(StringToTinyInt(inserted_pk[i]),StringToTinyInt(inserted_data[i])));
+    expected_results[i].push_back(cbrt(StringToTinyInt(inserted_pk[i])));
+    expected_results[i].push_back(log10(StringToTinyInt(inserted_pk[i])));
   }
 
-  for (int i = 0; i < inserted_pk.size(); i++) {
-    double_expected_results[i].push_back(cbrt(StringToTinyInt(inserted_pk[i])));
-    double_expected_results[i].push_back(log10(StringToTinyInt(inserted_pk[i])));
-    // std::cout <<double_expected_results[i][0]<<'\n';
-  }
-
-  double double_col_results[double_operations_query.size()];
   unsigned char col_results[operations_query.size()];
   SQLLEN col_len[operations_query.size()];
-  SQLLEN double_col_len[double_operations_query.size()];
   vector<tuple<int, int, SQLPOINTER, int, SQLLEN* >> bind_columns = {};
-  vector<tuple<int, int, SQLPOINTER, int, SQLLEN* >> double_bind_columns = {};
 
   // initialization for bind_columns
   for (int i = 0; i < operations_query.size(); i++) {
     tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_STINYINT, (SQLPOINTER) &col_results[i], 0, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
-  }
-  for (int i = 0; i < double_operations_query.size(); i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_DOUBLE, (SQLPOINTER) &double_col_results[i], 0, &double_col_len[i]);
-    double_bind_columns.push_back(tuple_to_insert);
   }
 
   string insert_string{}; 
@@ -608,23 +491,6 @@ TEST_F(PSQL_DataTypes_Tinyint, Arithmetic_Operator) {
 
       ASSERT_EQ(col_len[j], BYTES_EXPECTED);
       ASSERT_EQ(col_results[j], expected_results[i][j]);
-      // std::cout<<"Expected Result: "<< expected_results[i][j]<<'\n';
-    }
-  }
-  for (int i = 0; i < inserted_data.size(); ++i) {
-    
-    odbcHandler.CloseStmt();
-    odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, double_operations_query, vector<string> {}, COL1_NAME + "=" + inserted_pk[i]));
-    ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(double_bind_columns));
-
-    rcode = SQLFetch(odbcHandler.GetStatementHandle());
-    ASSERT_EQ(rcode, SQL_SUCCESS);
-
-    for (int j = 0; j < double_operations_query.size(); j++) {
-
-      ASSERT_EQ(double_col_len[j], DOUBLE_BYTES_EXPECTED);
-      ASSERT_EQ(double_col_results[j], double_expected_results[i][j]);
-      // std::cout<<"Expected Result: "<< double_expected_results[i][j]<<'\n';
     }
   }
 
