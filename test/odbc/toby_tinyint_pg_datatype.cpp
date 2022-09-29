@@ -35,7 +35,8 @@ class PSQL_DataTypes_Tinyint : public testing::Test{
 };
 
 // helper function to convert string to equivalent C version of int (long int)
-long int StringToTinyInt(const string &value) {
+int StringToTinyInt(const string &value) {
+  // return atoi();
   return strtol(value.c_str(), NULL, 10);
 }
 
@@ -44,7 +45,7 @@ TEST_F(PSQL_DataTypes_Tinyint, Table_Creation) {
   const int LENGTH_EXPECTED = 6;
   const int PRECISION_EXPECTED = 0;
   const int SCALE_EXPECTED = 0;
-  const string NAME_EXPECTED = "NULL";
+  const string NAME_EXPECTED = "int2";
   const int BYTES_EXPECTED = 2;
 
   const int BUFFER_SIZE = 256;
@@ -113,7 +114,7 @@ TEST_F(PSQL_DataTypes_Tinyint, Table_Creation) {
                           BUFFER_SIZE,
                           NULL,
                           NULL); 
-  // ASSERT_EQ(string(name), NAME_EXPECTED);  Same as problem above
+  ASSERT_EQ(string(name), NAME_EXPECTED);  //Same as problem above
 
   rcode = SQLFetch(odbcHandler.GetStatementHandle());
   ASSERT_EQ(rcode, SQL_NO_DATA);
@@ -128,6 +129,7 @@ TEST_F(PSQL_DataTypes_Tinyint, Insertion_Success) {
 
   unsigned char pk;
   unsigned char data;
+  // int data;
   SQLLEN pk_len;
   SQLLEN data_len;
   SQLLEN affected_rows;
@@ -401,11 +403,12 @@ TEST_F(PSQL_DataTypes_Tinyint, Update_Fail) {
 }
 
 TEST_F(PSQL_DataTypes_Tinyint,Arithmetic_Operators) {
-
-  const int BYTES_EXPECTED = 1;
+  const int BUFFER_LENGTH=8192;
+  const int COL_NUMS=2;
+  const int BYTES_EXPECTED = 2;
 
   unsigned char pk;
-  unsigned char data;
+  char data[BUFFER_LENGTH];
   SQLLEN pk_len;
   SQLLEN data_len;
   SQLLEN affected_rows;
@@ -414,43 +417,50 @@ TEST_F(PSQL_DataTypes_Tinyint,Arithmetic_Operators) {
   OdbcHandler odbcHandler;
 
   vector <string> inserted_pk = {
-    "20",
-    "30"
+    "8"
   };
 
   vector <string> inserted_data = {
-    "40",
-    "20"
+    "2"
   };
 
   vector <string> operations_query = {
     COL1_NAME + "+" + COL2_NAME,
     COL1_NAME + "-" + COL2_NAME,
     COL1_NAME + "*" + COL2_NAME,
-    COL1_NAME + "/" + COL2_NAME
+    COL1_NAME + "/" + COL2_NAME,
+    "ABS("+COL1_NAME+")",
+    "POWER("+COL1_NAME+","+COL2_NAME+")",
+    "||/ " +COL1_NAME,
+     "LOG("+COL1_NAME+")"
   };
 
-  vector<vector<unsigned char>>expected_results = {{},{}};
+  vector<vector<string>>expected_results = {{},{}};
 
   // initialization of expected_results
   for (int i = 0; i < inserted_pk.size(); i++) {
-    expected_results[i].push_back(StringToTinyInt(inserted_pk[i]) + StringToTinyInt(inserted_data[i]));
-    expected_results[i].push_back(StringToTinyInt(inserted_pk[i]) - StringToTinyInt(inserted_data[i]));
-    expected_results[i].push_back(StringToTinyInt(inserted_pk[i]) * StringToTinyInt(inserted_data[i]));
-    expected_results[i].push_back(StringToTinyInt(inserted_pk[i]) / StringToTinyInt(inserted_data[i]));
-    expected_results[i].push_back(abs(StringToTinyInt(inserted_pk[i])));
-    expected_results[i].push_back(pow(StringToTinyInt(inserted_pk[i]),StringToTinyInt(inserted_data[i])));
-    expected_results[i].push_back(cbrt(StringToTinyInt(inserted_pk[i])));
-    expected_results[i].push_back(log10(StringToTinyInt(inserted_pk[i])));
+    
+    expected_results[i].push_back(std::to_string(StringToTinyInt(inserted_pk[i]) + StringToTinyInt(inserted_data[i])));
+    expected_results[i].push_back(std::to_string(StringToTinyInt(inserted_pk[i]) - StringToTinyInt(inserted_data[i])));
+    expected_results[i].push_back(std::to_string(StringToTinyInt(inserted_pk[i]) * StringToTinyInt(inserted_data[i])));
+    expected_results[i].push_back(std::to_string(StringToTinyInt(inserted_pk[i]) / StringToTinyInt(inserted_data[i])));
+    expected_results[i].push_back(std::to_string(abs(StringToTinyInt(inserted_pk[i]))));
+    // The following get hard-code because the precision for postgresql and c++ are calulated differently
+    expected_results[i].push_back("64");
+    expected_results[i].push_back("2");
+    expected_results[i].push_back("0.9030899869919435");
+    // expected_results[i].push_back(std::to_string(pow(StringToTinyInt(inserted_pk[i]),StringToTinyInt(inserted_data[i]))));
+    // expected_results[i].push_back(std::to_string(cbrt(StringToTinyInt(inserted_pk[i]))));
+    // expected_results[i].push_back(std::to_string(log10(StringToTinyInt(inserted_pk[i]))));
   }
 
-  unsigned char col_results[operations_query.size()];
+  char col_results[operations_query.size()][BUFFER_LENGTH];
   SQLLEN col_len[operations_query.size()];
   vector<tuple<int, int, SQLPOINTER, int, SQLLEN* >> bind_columns = {};
 
   // initialization for bind_columns
   for (int i = 0; i < operations_query.size(); i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_STINYINT, (SQLPOINTER) &col_results[i], 0, &col_len[i]);
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
   }
 
@@ -477,7 +487,7 @@ TEST_F(PSQL_DataTypes_Tinyint,Arithmetic_Operators) {
 
   // Make sure inserted values are correct and operations
   ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(bind_columns));
-
+  std::cout<<"SSSS"<<"\n";
   for (int i = 0; i < inserted_data.size(); ++i) {
     
     odbcHandler.CloseStmt();
@@ -488,8 +498,7 @@ TEST_F(PSQL_DataTypes_Tinyint,Arithmetic_Operators) {
     ASSERT_EQ(rcode, SQL_SUCCESS);
 
     for (int j = 0; j < operations_query.size(); j++) {
-
-      ASSERT_EQ(col_len[j], BYTES_EXPECTED);
+      ASSERT_EQ(col_len[j], expected_results[i][j].size());
       ASSERT_EQ(col_results[j], expected_results[i][j]);
     }
   }
