@@ -21,6 +21,10 @@ const int BUFFER_SIZE = 256;
 
 class PSQL_DataTypes_Real : public testing::Test {
   void SetUp() override {
+    if (!Drivers::DriverExists(ServerType::PSQL)) {
+      GTEST_SKIP() << "PSQL Driver not present: skipping all tests for this fixture.";
+    }
+
     OdbcHandler test_setup(Drivers::GetDriver(ServerType::PSQL));
     test_setup.ConnectAndExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
   }
