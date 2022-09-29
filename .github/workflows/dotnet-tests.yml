@@ -1,5 +1,5 @@
 name: Dotnet Framework Tests
-on: [push]
+on: [push, pull_request]
 concurrency: # Cancel previous runs in the same branch
   group: dotnet-${{ github.ref }}
   cancel-in-progress: true
