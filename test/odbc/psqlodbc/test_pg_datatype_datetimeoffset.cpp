@@ -27,6 +27,10 @@ static const string DEFAULT_DATE_TIME{"1900-01-01 00:00:00 +00:00"};
 
 class PSQL_DataTypes_DateTimeOffset : public testing::Test {
   void SetUp() override {
+    if (!Drivers::DriverExists(ServerType::PSQL)) {
+      GTEST_SKIP() << "PSQL Driver not present: skipping all tests for this fixture.";
+    }
+
     OdbcHandler test_setup(Drivers::GetDriver(ServerType::PSQL));
     test_setup.ConnectAndExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
   }
