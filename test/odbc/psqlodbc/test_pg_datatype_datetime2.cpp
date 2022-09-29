@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
 #include <sqlext.h>
-#include "odbc_handler.h"
-#include "query_generator.h"
+#include "../src/odbc_handler.h"
+#include "../src/query_generator.h"
+#include "../src/drivers.h"
 #include <cmath>
 #include <iostream>
 #include <time.h>
@@ -21,12 +22,12 @@ const int BUFFER_SIZE = 256;
 
 class PSQL_DataTypes_DateTime2 : public testing::Test {
   void SetUp() override {
-    OdbcHandler test_setup;
+    OdbcHandler test_setup(Drivers::GetDriver(ServerType::PSQL));
     test_setup.ConnectAndExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
   }
 
   void TearDown() override {
-    OdbcHandler test_teardown;
+    OdbcHandler test_teardown(Drivers::GetDriver(ServerType::PSQL));
     test_teardown.ConnectAndExecQuery(DropObjectStatement("VIEW", VIEW_NAME));
     test_teardown.CloseStmt();
     test_teardown.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
@@ -46,7 +47,7 @@ TEST_F(PSQL_DataTypes_DateTime2, Table_Creation) {
   SQLLEN scale;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   // Create a table with columns defined with the specific datatype being tested.
   odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
@@ -112,7 +113,7 @@ TEST_F(PSQL_DataTypes_DateTime2, Insertion_Success) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   const vector<string> INSERTED_VALUES = {
     "NULL",
@@ -205,7 +206,7 @@ TEST_F(PSQL_DataTypes_DateTime2, Insertion_Success) {
 
 TEST_F(PSQL_DataTypes_DateTime2, Insertion_Fail) {
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   const vector<string> INVALID_INSERTED_VALUES = {
     "01-01-2000",             // Format
@@ -276,7 +277,7 @@ TEST_F(PSQL_DataTypes_DateTime2, Update_Success) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   const vector<tuple<int, int, SQLPOINTER, int, SQLLEN *>> BIND_COLUMNS = {
     {1, SQL_C_LONG, &pk, 0, &pk_len},
@@ -356,7 +357,7 @@ TEST_F(PSQL_DataTypes_DateTime2, Update_Fail) {
   SQLLEN data_len;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   const vector<tuple<int, int, SQLPOINTER, int, SQLLEN *>> BIND_COLUMNS = {
     {1, SQL_C_LONG, &pk, 0, &pk_len},
@@ -419,7 +420,7 @@ TEST_F(PSQL_DataTypes_DateTime2, Comparison_Operators) {
   };
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
   SQLLEN affected_rows;
   const int BYTES_EXPECTED = 1;
 
@@ -518,7 +519,7 @@ TEST_F(PSQL_DataTypes_DateTime2, Comparison_Functions) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   const vector<string> INSERTED_DATA = {
     "0001-01-01 00:00:00",
@@ -610,7 +611,7 @@ TEST_F(PSQL_DataTypes_DateTime2, View_Creation) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   const vector<string> INSERTED_VALUES = {
     "0001-01-01",
@@ -706,7 +707,7 @@ TEST_F(PSQL_DataTypes_DateTime2, Table_Unique_Constraints) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   const vector<string> INSERTED_VALUES = {
       "0001-01-01 00:00:00",
@@ -834,7 +835,7 @@ TEST_F(PSQL_DataTypes_DateTime2, Table_Composite_Keys) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   const vector<string> INSERTED_VALUES = {
       "0001-01-01 00:00:00",
