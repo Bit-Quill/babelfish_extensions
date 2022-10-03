@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
 #include <sqlext.h>
-#include "odbc_handler.h"
-#include "query_generator.h"
+#include "../src/drivers.h"
+#include "../src/odbc_handler.h"
+#include "../src/query_generator.h"
 #include <string>
 #include <math.h>
 
@@ -23,7 +24,7 @@ const string COL_TYPES[NUM_COLS] = {
   DATATYPE 
 };
 
-vector<pair<string, string>> TABLE_COLUMNS = {
+vector<pair<string, string>> TABLE_COLUMNS_FLOAT = {
   {COL_NAMES[0], COL_TYPES[0] + " PRIMARY KEY"},
   {COL_NAMES[1], COL_TYPES[1]}
 };  
@@ -37,43 +38,24 @@ const string float_383 ="-1e307";
 class PSQL_DataTypes_Float : public testing::Test{
 
   void SetUp() override {
-
-    OdbcHandler test_setup;
+    if (!Drivers::DriverExists(ServerType::PSQL)) {
+      GTEST_SKIP() << "PSQL Driver not present: skipping all tests for this fixture.";
+    }
+    OdbcHandler test_setup(Drivers::GetDriver(ServerType::PSQL));
     test_setup.ConnectAndExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
   }
   
 
   void TearDown() override {
 
-    OdbcHandler test_cleanup;
+    OdbcHandler test_cleanup(Drivers::GetDriver(ServerType::PSQL));
     test_cleanup.ConnectAndExecQuery(DropObjectStatement("VIEW", VIEW_NAME));
     test_cleanup.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
   }
 };
 
-// pads 0 at the end of the results depending on the scale number
-// double FormatDecWithScale(string decimal, const int &scale) {
-
-//   size_t dec_pos = decimal.find('.');
-
-//   if (dec_pos == std::string::npos) {
-//     if (scale == 0) // if no decimal sign and scale is 0, no need to append
-//       return atof(decimal);
-//     dec_pos = decimal.size();
-//     decimal += ".";
-//   }
-
-//   // add extra 0s
-//   int zeros_needed = scale - (decimal.size() - dec_pos - 1);
-//   for (int i = 0; i < zeros_needed; i++) {
-//     decimal += "0";
-//   }
-
-//   return atof(decimal);
-// }
-
 // helper function to initialize insert string (1, "", "", ""), etc.
-string InitializeInsertString(const vector<vector<string>> &inserted_values) {
+string InitializeInsertString_Float(const vector<vector<string>> &inserted_values) {
 
   string insert_string{};
   string comma{};
@@ -109,10 +91,10 @@ TEST_F(PSQL_DataTypes_Float, ColAttributes) {
   SQLLEN display_size;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   // Create a table with columns defined with the specific datatype being tested. 
-  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_FLOAT));
   odbcHandler.CloseStmt();
 
   // Select * From Table to ensure that it exists
@@ -186,7 +168,7 @@ TEST_F(PSQL_DataTypes_Float, Table_Create_Fail) {
   };
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   // Create a table with columns defined with the specific datatype being tested. 
   odbcHandler.Connect();
@@ -214,7 +196,7 @@ TEST_F(PSQL_DataTypes_Float, Insertion_Success) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {"1", float_15 }, // smallest numbers
@@ -231,10 +213,10 @@ TEST_F(PSQL_DataTypes_Float, Insertion_Success) {
     bind_columns.push_back(tuple_to_insert);
   }
 
-  string insert_string = InitializeInsertString(inserted_values);
+  string insert_string = InitializeInsertString_Float(inserted_values);
 
   // Create table
-  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_FLOAT));
   odbcHandler.CloseStmt();
 
   // Insert valid values into the table and assert affected rows
@@ -285,7 +267,7 @@ TEST_F(PSQL_DataTypes_Float, Insertion_Failure) {
   SQLLEN col_len[NUM_COLS];
 
   RETCODE rcode;
-  OdbcHandler odbcHandler; 
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL)); 
 
   vector<vector<string>> inserted_values = {
     {"0","1e309"},
@@ -296,7 +278,7 @@ TEST_F(PSQL_DataTypes_Float, Insertion_Failure) {
   };
 
   // Create table
-  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_FLOAT));
   odbcHandler.CloseStmt();
 
   // Insert invalid values in table and assert error
@@ -338,7 +320,7 @@ TEST_F(PSQL_DataTypes_Float, Update_Success) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {PK_VAL, "0.1"} 
@@ -360,10 +342,10 @@ TEST_F(PSQL_DataTypes_Float, Update_Success) {
     bind_columns.push_back(tuple_to_insert);
   }
 
-  string insert_string = InitializeInsertString(inserted_values);
+  string insert_string = InitializeInsertString_Float(inserted_values);
 
   // Create table
-  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_FLOAT));
   odbcHandler.CloseStmt();
 
   // Insert valid values into the table and assert affected rows
@@ -441,7 +423,7 @@ TEST_F(PSQL_DataTypes_Float, Update_Fail) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {PK_VAL, "0.1"} 
@@ -459,10 +441,10 @@ TEST_F(PSQL_DataTypes_Float, Update_Fail) {
     bind_columns.push_back(tuple_to_insert);
   }
 
-  string insert_string = InitializeInsertString(inserted_values);
+  string insert_string = InitializeInsertString_Float(inserted_values);
 
   // Create table
-  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_FLOAT));
   odbcHandler.CloseStmt();
 
   // Insert valid values into the table and assert affected rows
@@ -540,7 +522,7 @@ TEST_F(PSQL_DataTypes_Float,Arithmetic_Operators) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector <string> inserted_pk = {
     "8"
@@ -595,7 +577,7 @@ TEST_F(PSQL_DataTypes_Float,Arithmetic_Operators) {
   }
 
   // Create table
-  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_FLOAT));
   odbcHandler.CloseStmt();
 
   // Insert valid values into the table and assert affected rows
@@ -644,7 +626,7 @@ TEST_F(PSQL_DataTypes_Float, View_creation) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {"1", float_15}, // smallest numbers
@@ -661,10 +643,10 @@ TEST_F(PSQL_DataTypes_Float, View_creation) {
     bind_columns.push_back(tuple_to_insert);
   }
 
-  string insert_string = InitializeInsertString(inserted_values);
+  string insert_string = InitializeInsertString_Float(inserted_values);
 
   // Create table
-  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_FLOAT));
   odbcHandler.CloseStmt();
 
   // Insert valid values into the table and assert affected rows
@@ -714,7 +696,7 @@ TEST_F(PSQL_DataTypes_Float, View_creation) {
 
 
 TEST_F(PSQL_DataTypes_Float, Table_Composite_Keys) {
-  const vector<pair<string, string>> TABLE_COLUMNS = {
+  const vector<pair<string, string>> TABLE_COLUMNS_FLOAT = {
     {COL_NAMES[0], DATATYPE},
     {COL_NAMES[1], DATATYPE}
   };
@@ -745,7 +727,7 @@ TEST_F(PSQL_DataTypes_Float, Table_Composite_Keys) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   const vector<string> VALID_INSERTED_VALUES = {
     "0",
@@ -761,7 +743,7 @@ TEST_F(PSQL_DataTypes_Float, Table_Composite_Keys) {
     comma = ",";
   }
 
-  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS, table_constraints));
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_FLOAT, table_constraints));
   odbcHandler.CloseStmt();
 
   // Check if composite key still matches after creation
@@ -851,7 +833,7 @@ TEST_F(PSQL_DataTypes_Float, Table_Composite_Keys) {
 
 
 TEST_F(PSQL_DataTypes_Float, Table_Unique_Constraints) {
-  const vector<pair<string, string>> TABLE_COLUMNS = {
+  const vector<pair<string, string>> TABLE_COLUMNS_FLOAT = {
     {COL_NAMES[0], "INT PRIMARY KEY"},
     {COL_NAMES[1], DATATYPE+ " UNIQUE"}
   };
@@ -868,7 +850,7 @@ TEST_F(PSQL_DataTypes_Float, Table_Unique_Constraints) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   const vector<string> VALID_INSERTED_VALUES = {
     "0",
@@ -889,7 +871,7 @@ TEST_F(PSQL_DataTypes_Float, Table_Unique_Constraints) {
     comma = ",";
   }
 
-  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
+  odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_FLOAT));
   odbcHandler.CloseStmt();
 
   // Check if unique constraint still matches after creation

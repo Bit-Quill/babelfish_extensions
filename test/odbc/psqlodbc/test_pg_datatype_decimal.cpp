@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
 #include <sqlext.h>
-#include "odbc_handler.h"
-#include "query_generator.h"
+#include "../src/drivers.h"
+#include "../src/odbc_handler.h"
+#include "../src/query_generator.h"
 
 using std::pair;
 
@@ -41,14 +42,16 @@ const string MAX_DEC_4_2 = "99.99";
 class PSQL_DataTypes_Decimal : public testing::Test{
 
   void SetUp() override {
-
-    OdbcHandler test_setup;
+    if (!Drivers::DriverExists(ServerType::PSQL)) {
+      GTEST_SKIP() << "PSQL Driver not present: skipping all tests for this fixture.";
+    }
+    OdbcHandler test_setup(Drivers::GetDriver(ServerType::PSQL));
     test_setup.ConnectAndExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
   }
 
   void TearDown() override {
 
-    OdbcHandler test_cleanup;
+    OdbcHandler test_cleanup(Drivers::GetDriver(ServerType::PSQL));
     test_cleanup.ConnectAndExecQuery(DropObjectStatement("VIEW", VIEW_NAME));
     test_cleanup.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
   }
@@ -110,7 +113,7 @@ TEST_F(PSQL_DataTypes_Decimal, ColAttributes) {
   SQLLEN display_size;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   // Create a table with columns defined with the specific datatype being tested. 
   odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS));
@@ -188,7 +191,7 @@ TEST_F(PSQL_DataTypes_Decimal, Table_Create_Fail) {
   };
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   // Create a table with columns defined with the specific datatype being tested. 
   odbcHandler.Connect();
@@ -216,7 +219,7 @@ TEST_F(PSQL_DataTypes_Decimal, Insertion_Success) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {"1", "0", "0", "0", "0" }, // smallest numbers
@@ -289,7 +292,7 @@ TEST_F(PSQL_DataTypes_Decimal, Insertion_Failure) {
   SQLLEN col_len[NUM_COLS];
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {"1", MAX_DEC_5_5 + "9", "0", "0", "0" }, // first col exceeds by 1 digit
@@ -340,7 +343,7 @@ TEST_F(PSQL_DataTypes_Decimal, Update_Success) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {PK_VAL, "0.1", "0.2", "3", "4.4"} 
@@ -443,7 +446,7 @@ TEST_F(PSQL_DataTypes_Decimal, Update_Fail) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {PK_VAL, "0.1", "0.2", "3", "4.4"} 
@@ -543,7 +546,7 @@ TEST_F(PSQL_DataTypes_Decimal, View_creation) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {"1", "0", "0", "0", "0" }, // smallest numbers
