@@ -412,7 +412,7 @@ TEST_F(PSQL_DataTypes_int, Arithmetic_Operators) {
   OdbcHandler odbcHandler;
 
   vector <string> inserted_pk = {
-    "27"
+    "8"
   };
 
   vector <string> inserted_data = {
@@ -439,9 +439,9 @@ TEST_F(PSQL_DataTypes_int, Arithmetic_Operators) {
     expected_results[i].push_back(std::to_string(StringToInt4(inserted_pk[i]) * StringToInt4(inserted_data[i])));
     expected_results[i].push_back(std::to_string(StringToInt4(inserted_pk[i]) / StringToInt4(inserted_data[i])));
     expected_results[i].push_back(std::to_string(abs(StringToInt4(inserted_pk[i]))));
-    expected_results[i].push_back("729");
-    expected_results[i].push_back("3");
-    expected_results[i].push_back("1");
+    expected_results[i].push_back("64");
+    expected_results[i].push_back("2");
+    expected_results[i].push_back("0.9030899869919435");
 
   }
 
@@ -467,7 +467,6 @@ TEST_F(PSQL_DataTypes_int, Arithmetic_Operators) {
 
   // Create table
   odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_INT));
-  std::cout<<CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_INT);
   odbcHandler.CloseStmt();
 
   // Insert valid values into the table and assert affected rows
@@ -491,10 +490,8 @@ TEST_F(PSQL_DataTypes_int, Arithmetic_Operators) {
     ASSERT_EQ(rcode, SQL_SUCCESS);
 
     for (int j = 0; j < operations_query.size(); j++) {
-
       ASSERT_EQ(col_len[j], expected_results[i][j].size());
       ASSERT_EQ(col_results[j], expected_results[i][j]);
-      // std::cout<<"Expected Result: "<< expected_results[i][j]<<'\n';
     }
   }
   
