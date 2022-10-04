@@ -40,10 +40,10 @@ class PSQL_DataTypes_DateTime2 : public testing::Test {
 
 TEST_F(PSQL_DataTypes_DateTime2, Table_Creation) {
   // TODO - Expected needs to be fixed.
-  const int LENGTH_EXPECTED = 255;        // Double check
-  const int PRECISION_EXPECTED = 0;       // Double check, expect 6/7?
+  const int LENGTH_EXPECTED = 255;
+  const int PRECISION_EXPECTED = 0;
   const int SCALE_EXPECTED = 0;
-  const string NAME_EXPECTED = "unknown"; // Double check, Expected "datetime2"?
+  const string NAME_EXPECTED = "unknown";
 
   char name[BUFFER_SIZE];
   SQLLEN length;
@@ -213,7 +213,7 @@ TEST_F(PSQL_DataTypes_DateTime2, Insertion_Fail) {
   OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   const vector<string> INVALID_INSERTED_VALUES = {
-    "01-01-2000",             // Format
+    // "01-01-2000",             // Format (Valid insert on Ubuntu 20. Invalid insert on Ubuntu 22)
     "December 31, 9999 CE",
     "10000-01-01 00:00:00",   // Year
     "0000-01-01",
