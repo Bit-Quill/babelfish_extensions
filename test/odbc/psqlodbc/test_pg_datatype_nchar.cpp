@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
 #include <sqlext.h>
-#include "odbc_handler.h"
-#include "query_generator.h"
+#include "../src/drivers.h"
+#include "../src/odbc_handler.h"
+#include "../src/query_generator.h"
 
 using std::pair;
 
@@ -66,13 +67,13 @@ class PSQL_DataTypes_nchar : public testing::Test{
 
   void SetUp() override {
 
-    OdbcHandler test_setup;
+    OdbcHandler test_setup(Drivers::GetDriver(ServerType::PSQL));
     test_setup.ConnectAndExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
   }
 
   void TearDown() override {
 
-    OdbcHandler test_cleanup;
+    OdbcHandler test_cleanup(Drivers::GetDriver(ServerType::PSQL));
     test_cleanup.ConnectAndExecQuery(DropObjectStatement("VIEW", VIEW_NAME));
     test_cleanup.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
   }
@@ -86,7 +87,7 @@ string operator_multiple(const string& s,unsigned int n){
   return ret;
 };
 // helper function to initialize insert string (1, "", "", ""), etc.
-string InitializeInsertString(const vector<vector<string>> &inserted_values) {
+string InitializeInsertString_Nchar(const vector<vector<string>> &inserted_values) {
 
   string insert_string{};
   string comma{};
@@ -131,7 +132,7 @@ TEST_F(PSQL_DataTypes_nchar, ColAttributes) {
   SQLLEN is_case_sensitive;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   // Create a table with columns defined with the specific datatype being tested. 
   odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_NVARCHAR));
@@ -230,7 +231,7 @@ TEST_F(PSQL_DataTypes_nchar, Table_Create_Fail) {
   };
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   // Create a table with columns defined with the specific datatype being tested. 
   odbcHandler.Connect();
@@ -258,7 +259,7 @@ TEST_F(PSQL_DataTypes_nchar, Insertion_Success) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {"1", "", "", "" }, // empty strings
@@ -275,7 +276,7 @@ TEST_F(PSQL_DataTypes_nchar, Insertion_Success) {
     bind_columns.push_back(tuple_to_insert);
   }
 
-  string insert_string = InitializeInsertString(inserted_values);
+  string insert_string = InitializeInsertString_Nchar(inserted_values);
 
   // Create table
   odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_NVARCHAR));
@@ -328,7 +329,7 @@ TEST_F(PSQL_DataTypes_nchar, Insertion_Failure) {
   SQLLEN col_len[NUM_COLS];
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {"1", STRING_1 + "1", "", "" }, // first col exceeds by 1 char
@@ -378,7 +379,7 @@ TEST_F(PSQL_DataTypes_nchar, Update_Success) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {PK_VAL, "1", "2", "3"} 
@@ -398,7 +399,7 @@ TEST_F(PSQL_DataTypes_nchar, Update_Success) {
     bind_columns.push_back(tuple_to_insert);
   }
 
-  string insert_string = InitializeInsertString(inserted_values);
+  string insert_string = InitializeInsertString_Nchar(inserted_values);
 
 
   // Create table
@@ -479,7 +480,7 @@ TEST_F(PSQL_DataTypes_nchar, Update_Fail) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {PK_VAL, "1", "2", "3"} 
@@ -497,7 +498,7 @@ TEST_F(PSQL_DataTypes_nchar, Update_Fail) {
     bind_columns.push_back(tuple_to_insert);
   }
 
-  string insert_string = InitializeInsertString(inserted_values);
+  string insert_string = InitializeInsertString_Nchar(inserted_values);
 
   // Create table
   odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_NVARCHAR));
@@ -577,7 +578,7 @@ TEST_F(PSQL_DataTypes_nchar, String_Operators) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
 const int NUM_COLS = 2;
 const string COL_NAMES[NUM_COLS] = {"pk", "data"};
@@ -691,7 +692,7 @@ TEST_F(PSQL_DataTypes_nchar, View_creation) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
     {"1", "", "", "" }, // empty strings
@@ -708,7 +709,7 @@ TEST_F(PSQL_DataTypes_nchar, View_creation) {
     bind_columns.push_back(tuple_to_insert);
   }
 
-  string insert_string = InitializeInsertString(inserted_values);
+  string insert_string = InitializeInsertString_Nchar(inserted_values);
 
   // Create table
   odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_NVARCHAR));
@@ -789,7 +790,7 @@ TEST_F(PSQL_DataTypes_nchar, Table_Composite_Keys) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   const vector<string> VALID_INSERTED_VALUES = {
     STRING_1,
@@ -912,7 +913,7 @@ TEST_F(PSQL_DataTypes_nchar, Table_Unique_Constraints) {
   SQLLEN affected_rows;
 
   RETCODE rcode;
-  OdbcHandler odbcHandler;
+  OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   const vector<string> VALID_INSERTED_VALUES = {
     "0",
