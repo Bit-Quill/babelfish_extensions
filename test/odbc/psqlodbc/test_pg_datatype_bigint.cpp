@@ -19,6 +19,8 @@ vector<pair<string, string>> TABLE_COLUMNS = {
 };
 const int DATA_COLUMN = 2;
 const int BUFFER_SIZE = 256;
+const int INT_BYTES_EXPECTED = 4;
+const int BIGINT_BYTES_EXPECTED = 8;
 
 class PSQL_DataTypes_BigInt : public testing::Test {
   void SetUp() override {
@@ -111,9 +113,6 @@ TEST_F(PSQL_DataTypes_BigInt, Table_Creation) {
 }
 
 TEST_F(PSQL_DataTypes_BigInt, Insertion_Success) {
-  const int PK_BYTES_EXPECTED = 4;
-  const int DATA_BYTES_EXPECTED = 8;
-
   int pk;
   long long int data;
   SQLLEN pk_len;
@@ -123,13 +122,13 @@ TEST_F(PSQL_DataTypes_BigInt, Insertion_Success) {
   RETCODE rcode;
   OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
-  const vector<string> INSERTED_VALUES = {
+  const vector<string> INSERTED_DATA = {
     "NULL",
     "-9223372036854775808",
     "9223372036854775807",
     "123456789"
   };
-  const int NUM_OF_INSERTS = INSERTED_VALUES.size();
+  const int NUM_OF_INSERTS = INSERTED_DATA.size();
 
   const vector<tuple<int, int, SQLPOINTER, int, SQLLEN *>> BIND_COLUMNS = {
     {1, SQL_C_LONG, &pk, 0, &pk_len},
@@ -140,7 +139,7 @@ TEST_F(PSQL_DataTypes_BigInt, Insertion_Success) {
   string comma{};
 
   for (int i = 0; i < NUM_OF_INSERTS; i++) {
-    insert_string += comma + "(" + std::to_string(i) + "," + INSERTED_VALUES[i] + ")";
+    insert_string += comma + "(" + std::to_string(i) + "," + INSERTED_DATA[i] + ")";
     comma = ",";
   }
 
@@ -165,11 +164,11 @@ TEST_F(PSQL_DataTypes_BigInt, Insertion_Success) {
   for (int i = 0; i < NUM_OF_INSERTS; i++) {
     rcode = SQLFetch(odbcHandler.GetStatementHandle()); // retrieve row-by-row
     ASSERT_EQ(rcode, SQL_SUCCESS);
-    ASSERT_EQ(pk_len, PK_BYTES_EXPECTED);
+    ASSERT_EQ(pk_len, INT_BYTES_EXPECTED);
     ASSERT_EQ(pk, i);
-    if (INSERTED_VALUES[i] != "NULL") {
-      ASSERT_EQ(data_len, DATA_BYTES_EXPECTED);
-      ASSERT_EQ(data, StringToBigInt(INSERTED_VALUES[i]));
+    if (INSERTED_DATA[i] != "NULL") {
+      ASSERT_EQ(data_len, BIGINT_BYTES_EXPECTED);
+      ASSERT_EQ(data, StringToBigInt(INSERTED_DATA[i]));
     }
     else {
       ASSERT_EQ(data_len, SQL_NULL_DATA);
@@ -227,8 +226,6 @@ TEST_F(PSQL_DataTypes_BigInt, Update_Success) {
   const string INSERT_STRING = "(" + std::to_string(PK_INSERTED) + "," + DATA_INSERTED + ")";
   const string UPDATE_WHERE_CLAUSE = COL1_NAME + " = " + std::to_string(PK_INSERTED);
 
-  const int PK_BYTES_EXPECTED = 4;
-  const int DATA_BYTES_EXPECTED = 8;  
   const int AFFECTED_ROWS_EXPECTED = 1;
 
   int pk;
@@ -265,9 +262,9 @@ TEST_F(PSQL_DataTypes_BigInt, Update_Success) {
   odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, {"*"}, vector<string>{COL1_NAME}));
   rcode = SQLFetch(odbcHandler.GetStatementHandle());
   ASSERT_EQ(rcode, SQL_SUCCESS);
-  ASSERT_EQ(pk_len, PK_BYTES_EXPECTED);
+  ASSERT_EQ(pk_len, INT_BYTES_EXPECTED);
   ASSERT_EQ(pk, PK_INSERTED);
-  ASSERT_EQ(data_len, DATA_BYTES_EXPECTED);
+  ASSERT_EQ(data_len, BIGINT_BYTES_EXPECTED);
   ASSERT_EQ(data, StringToBigInt(DATA_INSERTED));
 
   rcode = SQLFetch(odbcHandler.GetStatementHandle());
@@ -289,9 +286,9 @@ TEST_F(PSQL_DataTypes_BigInt, Update_Success) {
     rcode = SQLFetch(odbcHandler.GetStatementHandle());
 
     ASSERT_EQ(rcode, SQL_SUCCESS);
-    ASSERT_EQ(pk_len, PK_BYTES_EXPECTED);
+    ASSERT_EQ(pk_len, INT_BYTES_EXPECTED);
     ASSERT_EQ(pk, PK_INSERTED);
-    ASSERT_EQ(data_len, DATA_BYTES_EXPECTED);
+    ASSERT_EQ(data_len, BIGINT_BYTES_EXPECTED);
     ASSERT_EQ(data, StringToBigInt(DATA_UPDATED_VALUES[i]));
 
     rcode = SQLFetch(odbcHandler.GetStatementHandle());
@@ -307,12 +304,8 @@ TEST_F(PSQL_DataTypes_BigInt, Update_Fail) {
   const string DATA_INSERTED = "12345";
   const string DATA_UPDATED_VALUE = "9223372036854775808"; // Over max
   
-
   const string INSERT_STRING = "(" + std::to_string(PK_INSERTED) + "," + DATA_INSERTED + ")";
   const string UPDATE_WHERE_CLAUSE = COL1_NAME + " = " + std::to_string(PK_INSERTED);
-
-  const int PK_BYTES_EXPECTED = 4;
-  const int DATA_BYTES_EXPECTED = 8;
 
   int pk;
   long long int data;
@@ -345,9 +338,9 @@ TEST_F(PSQL_DataTypes_BigInt, Update_Fail) {
   odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, {"*"}, vector<string>{COL1_NAME}));
   rcode = SQLFetch(odbcHandler.GetStatementHandle());
   ASSERT_EQ(rcode, SQL_SUCCESS);
-  ASSERT_EQ(pk_len, PK_BYTES_EXPECTED);
+  ASSERT_EQ(pk_len, INT_BYTES_EXPECTED);
   ASSERT_EQ(pk, PK_INSERTED);
-  ASSERT_EQ(data_len, DATA_BYTES_EXPECTED);
+  ASSERT_EQ(data_len, BIGINT_BYTES_EXPECTED);
   ASSERT_EQ(data, StringToBigInt(DATA_INSERTED));
 
   rcode = SQLFetch(odbcHandler.GetStatementHandle());
@@ -364,9 +357,9 @@ TEST_F(PSQL_DataTypes_BigInt, Update_Fail) {
   rcode = SQLFetch(odbcHandler.GetStatementHandle());
 
   ASSERT_EQ(rcode, SQL_SUCCESS);
-  ASSERT_EQ(pk_len, PK_BYTES_EXPECTED);
+  ASSERT_EQ(pk_len, INT_BYTES_EXPECTED);
   ASSERT_EQ(pk, PK_INSERTED);
-  ASSERT_EQ(data_len, DATA_BYTES_EXPECTED);
+  ASSERT_EQ(data_len, BIGINT_BYTES_EXPECTED);
   ASSERT_EQ(data, StringToBigInt(DATA_INSERTED));
 
   rcode = SQLFetch(odbcHandler.GetStatementHandle());
@@ -381,8 +374,6 @@ TEST_F(PSQL_DataTypes_BigInt, Arithmetic_Operators) {
     {COL1_NAME, DATATYPE_NAME + " PRIMARY KEY"},
     {COL2_NAME, DATATYPE_NAME}
   };
-
-  const int BYTES_EXPECTED = 8;
 
   long long int pk;
   long long int data;
@@ -399,12 +390,12 @@ TEST_F(PSQL_DataTypes_BigInt, Arithmetic_Operators) {
     "233"
   };
 
-  const vector<string> INSERT_DATA = {
+  const vector<string> INSERTED_DATA = {
     "2",
     "3",
     "5"
   };
-  const int NUM_OF_DATA = INSERT_DATA.size();
+  const int NUM_OF_DATA = INSERTED_DATA.size();
 
   const vector<string> OPERATIONS_QUERY = {
     COL1_NAME + "+" + COL2_NAME,
@@ -425,7 +416,7 @@ TEST_F(PSQL_DataTypes_BigInt, Arithmetic_Operators) {
   for (int i = 0; i < NUM_OF_DATA; i++) {
     expected_results.push_back({});
     long long int data_1 = StringToBigInt(INSERTED_PK[i]);
-    long long int data_2 = StringToBigInt(INSERT_DATA[i]);
+    long long int data_2 = StringToBigInt(INSERTED_DATA[i]);
 
     expected_results[i].push_back(data_1 + data_2);
     expected_results[i].push_back(data_1 - data_2);
@@ -453,7 +444,7 @@ TEST_F(PSQL_DataTypes_BigInt, Arithmetic_Operators) {
 
   // insert_string initialization
   for (int i = 0; i < NUM_OF_DATA; i++) {
-    insert_string += comma + "(" + INSERTED_PK[i] + "," + INSERT_DATA[i] + ")";
+    insert_string += comma + "(" + INSERTED_PK[i] + "," + INSERTED_DATA[i] + ")";
     comma = ",";
   }
 
@@ -480,7 +471,7 @@ TEST_F(PSQL_DataTypes_BigInt, Arithmetic_Operators) {
     ASSERT_EQ(rcode, SQL_SUCCESS);
 
     for (int j = 0; j < NUM_OF_OPERATIONS; j++) {
-      ASSERT_EQ(col_len[j], BYTES_EXPECTED);
+      ASSERT_EQ(col_len[j], BIGINT_BYTES_EXPECTED);
       ASSERT_EQ(col_results[j], expected_results[i][j]);
     }
   }
@@ -593,7 +584,6 @@ TEST_F(PSQL_DataTypes_BigInt, Comparison_Operators) {
 }
 
 TEST_F(PSQL_DataTypes_BigInt, Comparison_Functions) {
-  const int DATA_BYTES_EXPECTED = 8;
   SQLLEN affected_rows;
 
   RETCODE rcode;
@@ -629,7 +619,6 @@ TEST_F(PSQL_DataTypes_BigInt, Comparison_Functions) {
   expected_results.push_back(max_expected);
   expected_results.push_back(sum);
   expected_results.push_back(sum / NUM_OF_DATA);
-  
 
   long long int col_results[NUM_OF_OPERATIONS];
   SQLLEN col_len[NUM_OF_OPERATIONS];
@@ -671,7 +660,7 @@ TEST_F(PSQL_DataTypes_BigInt, Comparison_Functions) {
   rcode = SQLFetch(odbcHandler.GetStatementHandle());
   ASSERT_EQ(rcode, SQL_SUCCESS);
   for (int i = 0; i < NUM_OF_OPERATIONS; i++) {
-    ASSERT_EQ(col_len[i], DATA_BYTES_EXPECTED);
+    ASSERT_EQ(col_len[i], BIGINT_BYTES_EXPECTED);
     ASSERT_EQ(col_results[i], expected_results[i]);
   }
 
@@ -685,8 +674,6 @@ TEST_F(PSQL_DataTypes_BigInt, Comparison_Functions) {
 
 TEST_F(PSQL_DataTypes_BigInt, View_Creation) {
   const string VIEW_QUERY = "SELECT * FROM " + TABLE_NAME;
-  const int PK_BYTES_EXPECTED = 4;
-  const int DATA_BYTES_EXPECTED = 8;
 
   int pk;
   long long int data;
@@ -697,12 +684,12 @@ TEST_F(PSQL_DataTypes_BigInt, View_Creation) {
   RETCODE rcode;
   OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
-  const vector<string> INSERTED_VALUES = {
+  const vector<string> INSERTED_DATA = {
     "9223372036854775807",
     "123456789",
     "-9223372036854775808"
   };
-  const int NUM_OF_INSERTS = INSERTED_VALUES.size();
+  const int NUM_OF_INSERTS = INSERTED_DATA.size();
 
   const vector<tuple<int, int, SQLPOINTER, int, SQLLEN *>> BIND_COLUMNS = {
     {1, SQL_C_LONG, &pk, 0, &pk_len},
@@ -713,7 +700,7 @@ TEST_F(PSQL_DataTypes_BigInt, View_Creation) {
   string comma{};
 
   for (int i = 0; i < NUM_OF_INSERTS; i++) {
-    insert_string += comma + "(" + std::to_string(i) + "," + INSERTED_VALUES[i] + ")";
+    insert_string += comma + "(" + std::to_string(i) + "," + INSERTED_DATA[i] + ")";
     comma = ",";
   }
 
@@ -743,12 +730,12 @@ TEST_F(PSQL_DataTypes_BigInt, View_Creation) {
   for (int i = 0; i < NUM_OF_INSERTS; i++) {
     rcode = SQLFetch(odbcHandler.GetStatementHandle()); // retrieve row-by-row
     ASSERT_EQ(rcode, SQL_SUCCESS);
-    ASSERT_EQ(pk_len, PK_BYTES_EXPECTED);
+    ASSERT_EQ(pk_len, INT_BYTES_EXPECTED);
     ASSERT_EQ(pk, i);
 
-    if (INSERTED_VALUES[i] != "NULL") {
-      ASSERT_EQ(data_len, DATA_BYTES_EXPECTED);
-      ASSERT_EQ(data, StringToBigInt(INSERTED_VALUES[i]));
+    if (INSERTED_DATA[i] != "NULL") {
+      ASSERT_EQ(data_len, BIGINT_BYTES_EXPECTED);
+      ASSERT_EQ(data, StringToBigInt(INSERTED_DATA[i]));
     }
     else {
       ASSERT_EQ(data_len, SQL_NULL_DATA);
@@ -773,9 +760,6 @@ TEST_F(PSQL_DataTypes_BigInt, Table_Unique_Constraints) {
   };
   const string UNIQUE_COLUMN_NAME = COL2_NAME;
 
-  const int PK_BYTES_EXPECTED = 4;
-  const int DATA_BYTES_EXPECTED = 8;
-
   int pk;
   long long int data;
   SQLLEN pk_len;
@@ -785,11 +769,11 @@ TEST_F(PSQL_DataTypes_BigInt, Table_Unique_Constraints) {
   RETCODE rcode;
   OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
-  const vector<string> INSERTED_VALUES = {
+  const vector<string> INSERTED_DATA = {
     "9223372036854775807",
     "123456789"
   };
-  const int NUM_OF_INSERTED = INSERTED_VALUES.size();
+  const int NUM_OF_INSERTED = INSERTED_DATA.size();
 
   const vector<tuple<int, int, SQLPOINTER, int, SQLLEN *>> BIND_COLUMNS = {
     {1, SQL_C_LONG, &pk, 0, &pk_len},
@@ -800,7 +784,7 @@ TEST_F(PSQL_DataTypes_BigInt, Table_Unique_Constraints) {
   string comma{};
 
   for (int i = 0; i < NUM_OF_INSERTED; i++) {
-    insert_string += comma + "(" + std::to_string(i) + "," + INSERTED_VALUES[i] + ")";
+    insert_string += comma + "(" + std::to_string(i) + "," + INSERTED_DATA[i] + ")";
     comma = ",";
   }
 
@@ -816,7 +800,7 @@ TEST_F(PSQL_DataTypes_BigInt, Table_Unique_Constraints) {
   };
   ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(TABLE_BIND_COLUMNS));
 
-  const string PK_QUERY =
+  const string UNIQUE_KEY_QUERY =
     "SELECT C.COLUMN_NAME FROM "
     "INFORMATION_SCHEMA.TABLE_CONSTRAINTS T "
     "JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE C "
@@ -825,7 +809,7 @@ TEST_F(PSQL_DataTypes_BigInt, Table_Unique_Constraints) {
     "C.TABLE_NAME='" +
     TABLE_NAME.substr(TABLE_NAME.find('.') + 1, TABLE_NAME.length()) + "' "
     "AND T.CONSTRAINT_TYPE='UNIQUE'";
-  odbcHandler.ExecQuery(PK_QUERY);
+  odbcHandler.ExecQuery(UNIQUE_KEY_QUERY);
   rcode = SQLFetch(odbcHandler.GetStatementHandle());
   ASSERT_EQ(rcode, SQL_SUCCESS);
   ASSERT_EQ(string(column_name), UNIQUE_COLUMN_NAME);
@@ -853,11 +837,11 @@ TEST_F(PSQL_DataTypes_BigInt, Table_Unique_Constraints) {
   for (int i = 0; i < NUM_OF_INSERTED; i++) {
     rcode = SQLFetch(odbcHandler.GetStatementHandle()); // retrieve row-by-row
     ASSERT_EQ(rcode, SQL_SUCCESS);
-    ASSERT_EQ(pk_len, PK_BYTES_EXPECTED);
+    ASSERT_EQ(pk_len, INT_BYTES_EXPECTED);
     ASSERT_EQ(pk, i);
-    if (INSERTED_VALUES[i] != "NULL"){
-      ASSERT_EQ(data_len, DATA_BYTES_EXPECTED);
-      ASSERT_EQ(data, StringToBigInt(INSERTED_VALUES[i]));
+    if (INSERTED_DATA[i] != "NULL"){
+      ASSERT_EQ(data_len, BIGINT_BYTES_EXPECTED);
+      ASSERT_EQ(data, StringToBigInt(INSERTED_DATA[i]));
     }
     else {
       ASSERT_EQ(data_len, SQL_NULL_DATA);
@@ -873,7 +857,7 @@ TEST_F(PSQL_DataTypes_BigInt, Table_Unique_Constraints) {
   // Attempt to insert values that violates unique constraint and assert that they all fail
   // ie insert the same values from earlier
   for (int i = NUM_OF_INSERTED; i < 2 * NUM_OF_INSERTED; i++) {
-    string insert_string = "(" + std::to_string(i) + "," + INSERTED_VALUES[i - NUM_OF_INSERTED] + ")";
+    string insert_string = "(" + std::to_string(i) + "," + INSERTED_DATA[i - NUM_OF_INSERTED] + ")";
 
     rcode = SQLExecDirect(odbcHandler.GetStatementHandle(), (SQLCHAR *)InsertStatement(TABLE_NAME, insert_string).c_str(), SQL_NTS);
     ASSERT_EQ(rcode, SQL_ERROR);
@@ -903,9 +887,6 @@ TEST_F(PSQL_DataTypes_BigInt, Table_Composite_Keys) {
   }
   table_constraints += ")";
 
-  const int PK_BYTES_EXPECTED = 4;
-  const int DATA_BYTES_EXPECTED = 8;
-
   int pk;
   long long int data;
   SQLLEN pk_len;
@@ -915,11 +896,11 @@ TEST_F(PSQL_DataTypes_BigInt, Table_Composite_Keys) {
   RETCODE rcode;
   OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
-  const vector<string> INSERTED_VALUES = {
+  const vector<string> INSERTED_DATA = {
     "9223372036854775807",
     "123456789"
   };
-  const int NUM_INSERTED = INSERTED_VALUES.size();
+  const int NUM_INSERTED = INSERTED_DATA.size();
 
   const vector<tuple<int, int, SQLPOINTER, int, SQLLEN *>> BIND_COLUMNS = {
     {1, SQL_C_LONG, &pk, 0, &pk_len},
@@ -930,7 +911,7 @@ TEST_F(PSQL_DataTypes_BigInt, Table_Composite_Keys) {
   comma = "";
 
   for (int i = 0; i < NUM_INSERTED; i++) {
-    insert_string += comma + "(" + std::to_string(i) + "," + INSERTED_VALUES[i] + ")";
+    insert_string += comma + "(" + std::to_string(i) + "," + INSERTED_DATA[i] + ")";
     comma = ",";
   }
 
@@ -986,11 +967,11 @@ TEST_F(PSQL_DataTypes_BigInt, Table_Composite_Keys) {
   for (int i = 0; i < NUM_INSERTED; i++) {
     rcode = SQLFetch(odbcHandler.GetStatementHandle()); // retrieve row-by-row
     ASSERT_EQ(rcode, SQL_SUCCESS);
-    ASSERT_EQ(pk_len, PK_BYTES_EXPECTED);
+    ASSERT_EQ(pk_len, INT_BYTES_EXPECTED);
     ASSERT_EQ(pk, i);
-    if (INSERTED_VALUES[i] != "NULL") {
-      ASSERT_EQ(data_len, DATA_BYTES_EXPECTED);
-      ASSERT_EQ(data, StringToBigInt(INSERTED_VALUES[i]));
+    if (INSERTED_DATA[i] != "NULL") {
+      ASSERT_EQ(data_len, BIGINT_BYTES_EXPECTED);
+      ASSERT_EQ(data, StringToBigInt(INSERTED_DATA[i]));
     }
     else {
       ASSERT_EQ(data_len, SQL_NULL_DATA);
@@ -1005,7 +986,7 @@ TEST_F(PSQL_DataTypes_BigInt, Table_Composite_Keys) {
 
   // Attempt to insert values that violates composite constraint and assert that they all fail
   for (int i = 0; i < NUM_INSERTED * 2; i++) {
-    insert_string += comma + "(" + std::to_string(i) + "," + INSERTED_VALUES[i % NUM_INSERTED] + ")";
+    insert_string += comma + "(" + std::to_string(i) + "," + INSERTED_DATA[i % NUM_INSERTED] + ")";
     comma = ",";
   }
 
