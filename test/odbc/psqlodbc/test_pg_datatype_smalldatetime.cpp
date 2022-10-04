@@ -40,10 +40,10 @@ class PSQL_DataTypes_SmallDateTime : public testing::Test {
 
 TEST_F(PSQL_DataTypes_SmallDateTime, Table_Creation) {
   // TODO - Expected needs to be fixed.
-  const int LENGTH_EXPECTED = 255;        // Double check
-  const int PRECISION_EXPECTED = 0;       // Double check
+  const int LENGTH_EXPECTED = 255;
+  const int PRECISION_EXPECTED = 0;
   const int SCALE_EXPECTED = 0;
-  const string NAME_EXPECTED = "unknown"; // Double check, Expected "smalldatetime"?
+  const string NAME_EXPECTED = "unknown";
 
   char name[BUFFER_SIZE];
   SQLLEN length;
@@ -209,7 +209,7 @@ TEST_F(PSQL_DataTypes_SmallDateTime, Insertion_Fail) {
   OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   const vector<string> INVALID_INSERTED_VALUES = {
-    "01-01-2000",                 // Format
+    // "01-01-2000",             // Format (Valid insert on Ubuntu 20. Invalid insert on Ubuntu 22)
     "December 31, 1900 CE",
     "2080-01-01 00:00:00",        // Year
     "1899-12-31 00:00:00",
