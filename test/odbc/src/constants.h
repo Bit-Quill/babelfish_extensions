@@ -16,8 +16,6 @@ namespace constants {
 
   extern map<ServerType, string> server_to_odbc_types;
 
-  extern string MSSQL_ODBC_DRIVER_NAME;
-
 }
 
 #endif

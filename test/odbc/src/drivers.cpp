@@ -28,10 +28,6 @@ void Drivers::SetDrivers() {
     string db_driver_ = getenv(env_db_driver_.c_str()) ? string(getenv(env_db_driver_.c_str())) : 
         config_file_values.find(env_db_driver_) != config_file_values.end() ? config_file_values[env_db_driver_] : "";
     
-    if (db_driver_.empty() && it->first == ServerType::MSSQL) {
-      db_driver_ = MSSQL_ODBC_DRIVER_NAME;
-    }
-    
     string db_server_ = getenv(env_db_server_.c_str()) ? string(getenv(env_db_server_.c_str())) :
         config_file_values.find(env_db_server_) != config_file_values.end() ? config_file_values[env_db_server_] : "";
 
