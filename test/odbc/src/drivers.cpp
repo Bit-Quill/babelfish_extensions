@@ -27,7 +27,11 @@ void Drivers::SetDrivers() {
 
     string db_driver_ = getenv(env_db_driver_.c_str()) ? string(getenv(env_db_driver_.c_str())) : 
         config_file_values.find(env_db_driver_) != config_file_values.end() ? config_file_values[env_db_driver_] : "";
-        
+    
+    if (db_driver_.empty() && it->first == ServerType::MSSQL) {
+      db_driver_ = MSSQL_ODBC_DRIVER_NAME;
+    }
+    
     string db_server_ = getenv(env_db_server_.c_str()) ? string(getenv(env_db_server_.c_str())) :
         config_file_values.find(env_db_server_) != config_file_values.end() ? config_file_values[env_db_server_] : "";
 
@@ -45,8 +49,14 @@ void Drivers::SetDrivers() {
     
     if (IsValidConnectionObject(db_driver_, db_server_, db_port_, db_uid_, db_pwd_, db_dbname_)) {
 
-      ConnectionObject co(db_driver_, db_server_, db_port_, db_uid_, db_pwd_, db_dbname_);
-      odbc_drivers_.insert(pair<ServerType, ConnectionObject>(it->first, co));
+      if (it->first == ServerType::MSSQL) {
+        ConnectionObject co(db_driver_, db_server_, db_port_, db_uid_, db_pwd_, db_dbname_, true);
+        odbc_drivers_.insert(pair<ServerType, ConnectionObject>(it->first, co));
+      }
+      else {
+        ConnectionObject co(db_driver_, db_server_, db_port_, db_uid_, db_pwd_, db_dbname_);
+        odbc_drivers_.insert(pair<ServerType, ConnectionObject>(it->first, co));
+      }
     }
   } 
 }
