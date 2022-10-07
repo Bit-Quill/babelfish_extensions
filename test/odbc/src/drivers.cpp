@@ -45,14 +45,8 @@ void Drivers::SetDrivers() {
     
     if (IsValidConnectionObject(db_driver_, db_server_, db_port_, db_uid_, db_pwd_, db_dbname_)) {
 
-      if (it->first == ServerType::MSSQL) {
-        ConnectionObject co(db_driver_, db_server_, db_port_, db_uid_, db_pwd_, db_dbname_, true);
-        odbc_drivers_.insert(pair<ServerType, ConnectionObject>(it->first, co));
-      }
-      else {
-        ConnectionObject co(db_driver_, db_server_, db_port_, db_uid_, db_pwd_, db_dbname_);
-        odbc_drivers_.insert(pair<ServerType, ConnectionObject>(it->first, co));
-      }
+      ConnectionObject co(db_driver_, db_server_, db_port_, db_uid_, db_pwd_, db_dbname_, it->first == ServerType::MSSQL);
+      odbc_drivers_.insert(pair<ServerType, ConnectionObject>(it->first, co));
     }
   } 
 }
