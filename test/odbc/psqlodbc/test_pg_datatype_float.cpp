@@ -12,29 +12,22 @@ const string TABLE_NAME = "master_dbo.float_table_odbc_test";
 const string VIEW_NAME = "master_dbo.float_view_odbc_test";
 const string DATATYPE = "sys.float";
 const int NUM_COLS = 2;
+const int BUFFER_SIZE = 256;
 const string COL_NAMES[NUM_COLS] = {"pk", "float"};
 const int COL_LENGTH[NUM_COLS]={10,308};
 const int COL_SCALE[NUM_COLS] = {0, 308};
 
-// unsure of how these values are calculated, but they match with postgres' (non-sys) decimal type
-// Postgres documentation just says they're bytes size are variable
-
-const string COL_TYPES[NUM_COLS] = {
-  DATATYPE ,
-  DATATYPE 
-};
-
 vector<pair<string, string>> TABLE_COLUMNS_FLOAT = {
-  {COL_NAMES[0], COL_TYPES[0] + " PRIMARY KEY"},
-  {COL_NAMES[1], COL_TYPES[1]}
+  {COL_NAMES[0], DATATYPE + " PRIMARY KEY"},
+  {COL_NAMES[1], DATATYPE}
 };  
 double StringToDouble(const string &value){
+
     return atof(value.c_str());
   }
 
-const string float_15 = "1e308";
-// const string float_383 = "0.12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123";
-const string float_383 ="-1e307";
+const string FLOAT_15 = "1e308";
+const string FLOAT_383 ="-1e307";
 class PSQL_DataTypes_Float : public testing::Test{
 
   void SetUp() override {
@@ -47,7 +40,6 @@ class PSQL_DataTypes_Float : public testing::Test{
   
 
   void TearDown() override {
-
     OdbcHandler test_cleanup(Drivers::GetDriver(ServerType::PSQL));
     test_cleanup.ConnectAndExecQuery(DropObjectStatement("VIEW", VIEW_NAME));
     test_cleanup.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
@@ -61,7 +53,6 @@ string InitializeInsertString_Float(const vector<vector<string>> &inserted_value
   string comma{};
 
   for (int i = 0; i< inserted_values.size(); ++i) {
-
     insert_string += comma + "(";
     string comma2{};
 
@@ -79,11 +70,10 @@ string InitializeInsertString_Float(const vector<vector<string>> &inserted_value
 TEST_F(PSQL_DataTypes_Float, ColAttributes) {
 
   const string NAME_EXPECTED = "float8";
-  const int Lenghth_expected[NUM_COLS]={8,17};
-  const int PREICSION_EXPECTED=0;
-  const int SCALE_EXPECTED=0;
-  const int COL_LENGTH_EXPECTED[NUM_COLS]={24,24};
-  const int BUFFER_SIZE = 256;
+  const int LENGTH_EXPECTED[NUM_COLS]={8, 17};
+  const int PREICSION_EXPECTED = 0;
+  const int SCALE_EXPECTED = 0;
+  const int COL_LENGTH_EXPECTED[NUM_COLS]={24, 24};
   char name[BUFFER_SIZE];
   SQLLEN length;
   SQLLEN precision;
@@ -100,7 +90,6 @@ TEST_F(PSQL_DataTypes_Float, ColAttributes) {
   // Select * From Table to ensure that it exists
   odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, {"*"}, vector<string> {COL_NAMES[0]}));
   for (int i = 1; i <= NUM_COLS; i++) {
-    std::cout<<"Current Column: "<< i-1<<'\n';
     // Make sure column attributes are correct
     rcode = SQLColAttribute(odbcHandler.GetStatementHandle(),
                             i,
@@ -110,7 +99,7 @@ TEST_F(PSQL_DataTypes_Float, ColAttributes) {
                             NULL,
                             (SQLLEN*) &length);
     ASSERT_EQ(rcode, SQL_SUCCESS);
-    ASSERT_EQ(length, Lenghth_expected[i-1]);
+    ASSERT_EQ(length, LENGTH_EXPECTED[i - 1]);
 
     rcode = SQLColAttribute(odbcHandler.GetStatementHandle(),
                             i,
@@ -120,7 +109,7 @@ TEST_F(PSQL_DataTypes_Float, ColAttributes) {
                             NULL,
                             (SQLLEN*) &display_size);
     ASSERT_EQ(rcode, SQL_SUCCESS);
-    ASSERT_EQ(display_size, COL_LENGTH_EXPECTED[i-1]); // add 2 since we also add the decimal and negative characters
+    ASSERT_EQ(display_size, COL_LENGTH_EXPECTED[i - 1]); // Display the actual length size 
     
     rcode = SQLColAttribute(odbcHandler.GetStatementHandle(),
                             i,
@@ -151,20 +140,19 @@ TEST_F(PSQL_DataTypes_Float, ColAttributes) {
                             NULL);
     ASSERT_EQ(rcode, SQL_SUCCESS);
     ASSERT_EQ(string(name), NAME_EXPECTED);
-
   }
 
   rcode = SQLFetch(odbcHandler.GetStatementHandle());
   ASSERT_EQ(rcode, SQL_NO_DATA);
+
+  odbcHandler.CloseStmt();
+  odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
 
 TEST_F(PSQL_DataTypes_Float, Table_Create_Fail) {
 
   vector<vector<pair<string, string>>> invalid_columns{
-    {{"invalid1", DATATYPE + "(0)"}}, // must have precision of 1 or greater
-    {{"invalid2", DATATYPE + "(11)"}} // scale cannot be larger than precision
-    // Does not work on Postgres endpoint
-    // , {{"invalid4", DATATYPE + "(39, 39)"}} // max precision is 38 
+    {{"invalid1", DATATYPE + "(0)"}}, // For Float, there is no parameter should be initialized 
   };
 
   RETCODE rcode;
@@ -190,7 +178,7 @@ TEST_F(PSQL_DataTypes_Float, Table_Create_Fail) {
 TEST_F(PSQL_DataTypes_Float, Insertion_Success) {
 
   const int BUFFER_LENGTH = 8192;
-  const int BYTES_EXPECTED=8;
+  const int BYTES_EXPECTED = 8;
   double col_results[NUM_COLS];
   SQLLEN col_len[NUM_COLS];
   SQLLEN affected_rows;
@@ -199,8 +187,8 @@ TEST_F(PSQL_DataTypes_Float, Insertion_Success) {
   OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
-    {"1", float_15 }, // smallest numbers
-    {"2", float_383}, // max values
+    {"1", FLOAT_15 }, // smallest numbers
+    {"2", FLOAT_383}, // max values
     {"3",  "0.4347509234", }, // random regular values
     {"4", "NULL"} // NULL values
   };
@@ -209,7 +197,7 @@ TEST_F(PSQL_DataTypes_Float, Insertion_Success) {
 
   // initialize bind_columns
   for (int i = 0; i < NUM_COLS; i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_DOUBLE, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i + 1, SQL_C_DOUBLE, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
   }
 
@@ -248,8 +236,9 @@ TEST_F(PSQL_DataTypes_Float, Insertion_Success) {
         ASSERT_EQ(col_len[j], BYTES_EXPECTED);
       
       } 
-      else 
+      else {
         ASSERT_EQ(col_len[j], SQL_NULL_DATA);
+      }
     }
   }
 
@@ -262,7 +251,6 @@ TEST_F(PSQL_DataTypes_Float, Insertion_Success) {
 }
 
 TEST_F(PSQL_DataTypes_Float, Insertion_Failure) {
-
 
   SQLLEN col_len[NUM_COLS];
 
@@ -293,7 +281,6 @@ TEST_F(PSQL_DataTypes_Float, Insertion_Failure) {
       comma = ",";
     }
     insert_string += ")";
-    // std::cout<<"Current Value is: "<< insert_string;
     rcode = SQLExecDirect(odbcHandler.GetStatementHandle(), (SQLCHAR*) InsertStatement(TABLE_NAME, insert_string).c_str(), SQL_NTS);
     ASSERT_EQ(rcode, SQL_ERROR);
     odbcHandler.CloseStmt();
@@ -328,9 +315,9 @@ TEST_F(PSQL_DataTypes_Float, Update_Success) {
 
   vector<vector<string>> updated_values = {
     // standard values
-    {PK_VAL, float_383}, // max values
+    {PK_VAL, FLOAT_383}, // max values
     {PK_VAL, "0"},
-    {PK_VAL,float_15} // min values
+    {PK_VAL,FLOAT_15} // min values
     
   };
 
@@ -399,7 +386,6 @@ TEST_F(PSQL_DataTypes_Float, Update_Success) {
     rcode = SQLFetch(odbcHandler.GetStatementHandle());
 
     for (int j = 0; j < NUM_COLS; j++) {
-      
       ASSERT_EQ(col_results[j], StringToDouble(updated_values[i][j]));
       ASSERT_EQ(col_len[j], BYTES_EXPECTED); 
     }
@@ -540,22 +526,30 @@ TEST_F(PSQL_DataTypes_Float,Arithmetic_Operators) {
     "ABS("+COL_NAMES[0]+")",
     "POWER("+COL_NAMES[0]+","+COL_NAMES[1]+")",
     "||/ "+COL_NAMES[0],
-    "LOG("+COL_NAMES[0]+")"    
+    "LOG("+COL_NAMES[0]+")",
+    COL_NAMES[0] + ">" + COL_NAMES[1],
+    COL_NAMES[0] + ">=" + COL_NAMES[1],
+    COL_NAMES[0] + "<=" + COL_NAMES[1],
+    COL_NAMES[0] + "<" + COL_NAMES[1],
+    COL_NAMES[0] + "<>" + COL_NAMES[1],
   };
 
   vector<vector<string>>expected_results = {{},{}};
 
   // initialization of expected_results
-  for (int i = 0; i < inserted_pk.size(); i++) {
-    expected_results[i].push_back("10");
-    expected_results[i].push_back("6");
-    expected_results[i].push_back("16");
-    expected_results[i].push_back("4");
-    expected_results[i].push_back("8");
-    expected_results[i].push_back("64");
-    expected_results[i].push_back("2");
-    expected_results[i].push_back("0.9030899869919435");
-  }
+  expected_results[0].push_back("10");
+  expected_results[0].push_back("6");
+  expected_results[0].push_back("16");
+  expected_results[0].push_back("4");
+  expected_results[0].push_back("8");
+  expected_results[0].push_back("64");
+  expected_results[0].push_back("2");
+  expected_results[0].push_back("0.9030899869919435");
+  expected_results[0].push_back(std::to_string(inserted_pk[0] > inserted_data[0]));
+  expected_results[0].push_back(std::to_string(inserted_pk[0] >= inserted_data[0]));
+  expected_results[0].push_back(std::to_string(inserted_pk[0] <= inserted_data[0]));
+  expected_results[0].push_back(std::to_string(inserted_pk[0] < inserted_data[0]));
+  expected_results[0].push_back(std::to_string(inserted_pk[0] != inserted_data[0]));
 
   char col_results[operations_query.size()][BUFFER_LENGTH];
   SQLLEN col_len[operations_query.size()];
@@ -586,24 +580,20 @@ TEST_F(PSQL_DataTypes_Float,Arithmetic_Operators) {
   rcode = SQLRowCount(odbcHandler.GetStatementHandle(), &affected_rows);
   ASSERT_EQ(rcode, SQL_SUCCESS);
   ASSERT_EQ(affected_rows, inserted_data.size());
-  
 
   // Make sure inserted values are correct and operations
   ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(bind_columns));
 
-  for (int i = 0; i < inserted_data.size(); ++i) {
-    
-    odbcHandler.CloseStmt();
-    odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, operations_query, vector<string> {}, COL_NAMES[0] + "=" + inserted_pk[i]));
-    ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(bind_columns));
+  odbcHandler.CloseStmt();
+  odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, operations_query, vector<string> {}, COL_NAMES[0] + "=" + inserted_pk[0]));
+  ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(bind_columns));
 
-    rcode = SQLFetch(odbcHandler.GetStatementHandle());
-    ASSERT_EQ(rcode, SQL_SUCCESS);
+  rcode = SQLFetch(odbcHandler.GetStatementHandle());
+  ASSERT_EQ(rcode, SQL_SUCCESS);
 
-    for (int j = 0; j < operations_query.size(); j++) {
-      ASSERT_EQ(col_len[j], expected_results[i][j].size());
-      ASSERT_EQ(col_results[j], expected_results[i][j]);
-    }
+  for (int j = 0; j < operations_query.size(); j++) {
+      ASSERT_EQ(col_len[j], expected_results[0][j].size());
+      ASSERT_EQ(col_results[j], expected_results[0][j]);
   }
 
   // Assert that there is no more data
@@ -613,8 +603,6 @@ TEST_F(PSQL_DataTypes_Float,Arithmetic_Operators) {
   odbcHandler.CloseStmt();
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
-
-
 
 TEST_F(PSQL_DataTypes_Float, View_creation) {
   const int BYTES_EXPECTED = 8;
@@ -629,8 +617,8 @@ TEST_F(PSQL_DataTypes_Float, View_creation) {
   OdbcHandler odbcHandler(Drivers::GetDriver(ServerType::PSQL));
 
   vector<vector<string>> inserted_values = {
-    {"1", float_15}, // smallest numbers
-    {"2", float_383}, // max values
+    {"1", FLOAT_15}, // smallest numbers
+    {"2", FLOAT_383}, // max values
     {"3", "0.4347509234"}, // random regular values
     {"4",  "NULL"} // NULL values
   };
@@ -639,7 +627,7 @@ TEST_F(PSQL_DataTypes_Float, View_creation) {
 
   // initialize bind_columns
   for (int i = 0; i < NUM_COLS; i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_DOUBLE, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i + 1, SQL_C_DOUBLE, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
   }
 
@@ -717,7 +705,6 @@ TEST_F(PSQL_DataTypes_Float, Table_Composite_Keys) {
   table_constraints += ")";
 
   const int DATA_BYTES_EXPECTED = 8;
-  const int BUFFER_SIZE=256;
   const int PK_BYTES_EXPECTED=4;
 
   int pk;
@@ -952,4 +939,5 @@ TEST_F(PSQL_DataTypes_Float, Table_Unique_Constraints) {
   }
 
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
+
 }
