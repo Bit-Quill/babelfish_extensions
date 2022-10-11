@@ -10,6 +10,7 @@ const string TABLE_NAME = "master_dbo.bpchar_table_odbc_test";
 const string VIEW_NAME = "master_dbo.bpchar_view_odbc_test";
 const string DATATYPE = "sys.bpchar";
 const int NUM_COLS = 4;
+const int BUFFER_SIZE = 256;
 const string COL_NAMES[NUM_COLS] = {"pk", "nvarchar_1", "nvarchar_4000", "nvarchar_20"};
 const int COL_LENGTH[NUM_COLS] = {10, 1, 4000, 20};
 
@@ -121,7 +122,6 @@ TEST_F(PSQL_DataTypes_bpchar, ColAttributes) {
   const string SUFFIX_EXPECTED = "'";
   const int BYTES_EXPECTED = 2;
 
-  const int BUFFER_SIZE = 256;
   char name[BUFFER_SIZE];
   char suffix[BUFFER_SIZE];
   char prefix[BUFFER_SIZE];
@@ -226,7 +226,6 @@ TEST_F(PSQL_DataTypes_bpchar, Table_Create_Fail) {
   vector<vector<pair<string, string>>> invalid_columns{
     {{"invalid1", DATATYPE + "(-1)"}},
     {{"invalid2", DATATYPE + "(0)"}},
-    // {{"invalid3", DATATYPE + "(8001)"}}, -- This works on the postgres endpoint?
     {{"invalid4", DATATYPE + "(NULL)"}}
   };
 
@@ -272,7 +271,7 @@ TEST_F(PSQL_DataTypes_bpchar, Insertion_Success) {
 
   // initialize bind_columns
   for (int i = 0; i < NUM_COLS; i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i + 1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
   }
 
@@ -304,15 +303,12 @@ TEST_F(PSQL_DataTypes_bpchar, Insertion_Success) {
 
     for (int j = 0; j < NUM_COLS; j++) {
       if (inserted_values[i][j] != "NULL") {
-        ASSERT_EQ(string(col_results[j]), inserted_values[i][j]+ operator_multiple(" ",(COL_LENGTH[j]-inserted_values[i][j].size())));
+        ASSERT_EQ(string(col_results[j]), inserted_values[i][j] + operator_multiple(" ",(COL_LENGTH[j] - inserted_values[i][j].size())));
         ASSERT_EQ(col_len[j], COL_LENGTH[j]);
       } 
-      // else if(inserted_values[i][j]==""){
-      //   ASSERT_EQ(string(col_results[j]), inserted_values[i][j]+(std::string ((COL_LENGTH[j]-inserted_values[i][j].size()," "))));
-      //   ASSERT_EQ(col_len[j], COL_LENGTH[j]);
-      // }
-      else 
+      else{
         ASSERT_EQ(col_len[j], SQL_NULL_DATA);
+      }
     }
   }
 
@@ -398,12 +394,11 @@ TEST_F(PSQL_DataTypes_bpchar, Update_Success) {
 
   // initialize bind_columns
   for (int i = 0; i < NUM_COLS; i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i + 1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
   }
 
   string insert_string = InitializeInsertString(inserted_values);
-
 
   // Create table
   odbcHandler.ConnectAndExecQuery(CreateTableStatement(TABLE_NAME, TABLE_COLUMNS_NVARCHAR));
@@ -429,7 +424,7 @@ TEST_F(PSQL_DataTypes_bpchar, Update_Success) {
     ASSERT_EQ(rcode, SQL_SUCCESS);
 
     for (int j = 0; j < NUM_COLS; j++) {
-      ASSERT_EQ(string(col_results[j]), inserted_values[i][j]+ operator_multiple(" ",(COL_LENGTH[j]-inserted_values[i][j].size())));
+      ASSERT_EQ(string(col_results[j]), inserted_values[i][j]+ operator_multiple(" ",(COL_LENGTH[j] - inserted_values[i][j].size())));
       ASSERT_EQ(col_len[j], COL_LENGTH[j]);
     }
   }
@@ -460,7 +455,7 @@ TEST_F(PSQL_DataTypes_bpchar, Update_Success) {
 
     for (int j = 0; j < NUM_COLS; j++) {
       
-      ASSERT_EQ(string(col_results[j]), updated_values[i][j]+ operator_multiple(" ",(COL_LENGTH[j]-updated_values[i][j].size())));
+      ASSERT_EQ(string(col_results[j]), updated_values[i][j] + operator_multiple(" ",(COL_LENGTH[j] - updated_values[i][j].size())));
       ASSERT_EQ(col_len[j], COL_LENGTH[j]);
     }
 
@@ -497,7 +492,7 @@ TEST_F(PSQL_DataTypes_bpchar, Update_Fail) {
 
   // initialize bind_columns
   for (int i = 0; i < NUM_COLS; i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i + 1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
   }
 
@@ -527,7 +522,7 @@ TEST_F(PSQL_DataTypes_bpchar, Update_Fail) {
     ASSERT_EQ(rcode, SQL_SUCCESS);
 
     for (int j = 0; j < NUM_COLS; j++) {
-      ASSERT_EQ(string(col_results[j]), inserted_values[i][j]+ operator_multiple(" ",(COL_LENGTH[j]-inserted_values[i][j].size())));
+      ASSERT_EQ(string(col_results[j]), inserted_values[i][j] + operator_multiple(" ",(COL_LENGTH[j] - inserted_values[i][j].size())));
       ASSERT_EQ(col_len[j], COL_LENGTH[j]);
     }
   }
@@ -559,7 +554,7 @@ TEST_F(PSQL_DataTypes_bpchar, Update_Fail) {
 
   // Assert that the results did not change
   for (int i = 0; i < NUM_COLS; i++) {
-    ASSERT_EQ(string(col_results[i]), inserted_values[0][i]+ operator_multiple(" ",(COL_LENGTH[i]-inserted_values[0][i].size())));
+    ASSERT_EQ(string(col_results[i]), inserted_values[0][i] + operator_multiple(" ",(COL_LENGTH[i] - inserted_values[0][i].size())));
     ASSERT_EQ(col_len[i], COL_LENGTH[i]);
   }
 
@@ -568,10 +563,11 @@ TEST_F(PSQL_DataTypes_bpchar, Update_Fail) {
 
   odbcHandler.CloseStmt();
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
+
 }
 
 TEST_F(PSQL_DataTypes_bpchar, String_Operators) {
-  const int BUFFER_LENGTH=8192;
+  const int BUFFER_LENGTH = 8192;
   const int BYTES_EXPECTED = 4;
   const int DOUBLE_BYTES_EXPECTE = 8;
   int pk;
@@ -597,7 +593,6 @@ vector<pair<string, string>> TABLE_COLUMNS_NTEXT = {
   {COL_NAMES[1], COL_TYPES[1]}
 };
 
-
   vector <string> inserted_pk = {
     "123",
     "456"
@@ -609,29 +604,37 @@ vector<pair<string, string>> TABLE_COLUMNS_NTEXT = {
   };
 
   vector <string> operations_query = {
-    COL_NAMES[0]+ "||" + COL_NAMES[1],
-    "lower("+COL_NAMES[1]+")"
+    COL_NAMES[0] + "||" + COL_NAMES[1],
+    "lower(" + COL_NAMES[1] + ")",
+    COL_NAMES[0] + ">" + COL_NAMES[1],
+    COL_NAMES[0] + ">=" + COL_NAMES[1],
+    COL_NAMES[0] + "<=" + COL_NAMES[1],
+    COL_NAMES[0] + "<" + COL_NAMES[1],
+    COL_NAMES[0] + "<>" + COL_NAMES[1]
   };
-
 
   vector<vector<string>>expected_results = {{},{}};
 
   // initialization of expected_results
   for (int i = 0; i < inserted_pk.size(); i++) {
     expected_results[i].push_back(inserted_pk[i] + inserted_data[i]);
-    string current=inserted_data[i];
+    string current = inserted_data[i];
     transform(current.begin(), current.end(), current.begin(), ::tolower);
     expected_results[i].push_back(current);
-    
+    expected_results[i].push_back(std::to_string(inserted_pk[i] > inserted_data[i]));
+    expected_results[i].push_back(std::to_string(inserted_pk[i] >= inserted_data[i]));
+    expected_results[i].push_back(std::to_string(inserted_pk[i] <= inserted_data[i]));
+    expected_results[i].push_back(std::to_string(inserted_pk[i] < inserted_data[i]));
+    expected_results[i].push_back(std::to_string(inserted_pk[i] != inserted_data[i]));
   }
 
-  char col_results[NUM_COLS][BUFFER_LENGTH];
-  SQLLEN col_len[NUM_COLS];
+  char col_results[operations_query.size()][BUFFER_LENGTH];
+  SQLLEN col_len[operations_query.size()];
   vector<tuple<int, int, SQLPOINTER, int, SQLLEN* >> bind_columns = {};
 
   // initialization for bind_columns
   for (int i = 0; i < operations_query.size(); i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i + 1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
   }
 
@@ -668,7 +671,6 @@ vector<pair<string, string>> TABLE_COLUMNS_NTEXT = {
     ASSERT_EQ(rcode, SQL_SUCCESS);
 
     for (int j = 0; j < operations_query.size(); j++) {
-
       ASSERT_EQ(col_len[j], expected_results[i][j].size());
       ASSERT_EQ(col_results[j], expected_results[i][j]);
     }
@@ -680,10 +682,8 @@ vector<pair<string, string>> TABLE_COLUMNS_NTEXT = {
 
   odbcHandler.CloseStmt();
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
+
 }
-
-
-
 
 TEST_F(PSQL_DataTypes_bpchar, View_creation) {
 
@@ -708,7 +708,7 @@ TEST_F(PSQL_DataTypes_bpchar, View_creation) {
 
   // initialize bind_columns
   for (int i = 0; i < NUM_COLS; i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i + 1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
   }
 
@@ -746,7 +746,7 @@ TEST_F(PSQL_DataTypes_bpchar, View_creation) {
       
       if (inserted_values[i][j] != "NULL") {
 
-        ASSERT_EQ(string(col_results[j]), inserted_values[i][j]+ operator_multiple(" ",(COL_LENGTH[j]-inserted_values[i][j].size())));
+        ASSERT_EQ(string(col_results[j]), inserted_values[i][j]+ operator_multiple(" ",(COL_LENGTH[j] - inserted_values[i][j].size())));
         ASSERT_EQ(col_len[j], COL_LENGTH[j]);
       } 
       else {
@@ -761,9 +761,11 @@ TEST_F(PSQL_DataTypes_bpchar, View_creation) {
 
   odbcHandler.CloseStmt();
   odbcHandler.ExecQuery(DropObjectStatement("VIEW", VIEW_NAME));
+  
 }
 
 TEST_F(PSQL_DataTypes_bpchar, Table_Composite_Keys) {
+
   const vector<pair<string, string>> TABLE_COLUMNS = {
     {COL_NAMES[0], "int" },
     {COL_NAMES[1], DATATYPE}
@@ -785,7 +787,7 @@ TEST_F(PSQL_DataTypes_bpchar, Table_Composite_Keys) {
   table_constraints += ")";
 
   const int PK_BYTES_EXPECTED = 4;
-  const int BUFFER_LENGTH=8192;
+  const int BUFFER_LENGTH = 8192;
   int pk;
   char data[BUFFER_LENGTH];
   SQLLEN pk_len;
@@ -904,11 +906,10 @@ TEST_F(PSQL_DataTypes_bpchar, Table_Unique_Constraints) {
     {COL_NAMES[1], DATATYPE + " UNIQUE"}
   };
  
- 
   const string UNIQUE_COLUMN_NAME = COL_NAMES[1];
 
   const int PK_BYTES_EXPECTED = 4;
-  const int BUFFER_LENGTH=8192;
+  const int BUFFER_LENGTH = 8192;
   int pk;
   char data[BUFFER_LENGTH];
   SQLLEN pk_len;
