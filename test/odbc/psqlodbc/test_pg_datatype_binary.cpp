@@ -46,17 +46,15 @@ class PSQL_DataTypes_Binary : public testing::Test {
 
 std::string GetHexRepresentation(std::string inserted_int) {
   std::stringstream stream;
-  stream << std::hex << atoi(inserted_int.c_str());
-  return std::string( stream.str() );
+  stream << std::hex << strtoul(inserted_int.c_str(), nullptr, 10);
+  return stream.str();
 }
 
 // Helper to compare inserted integer string with returned hexadecimal strings
-bool BinaryCompare(std::string actual_hex, std::string inserted_int, size_t expected_size) {
-  std::string expected_hex = GetHexRepresentation(inserted_int);
-
+bool BinaryCompare(std::string actual_hex, std::string expected_hex, size_t expected_size) {
   const size_t ACTUAL_LENGTH = actual_hex.length();
   const size_t EXPECTED_LENGTH = expected_hex.length();
-  for (size_t i = 0; i < expected_size * 2; i++) {
+  for (size_t i = 0; i < expected_size; i++) {
     if (i >= EXPECTED_LENGTH) {
       if (actual_hex[ACTUAL_LENGTH - 1 - i] != '0') {
         return false;
@@ -66,7 +64,6 @@ bool BinaryCompare(std::string actual_hex, std::string inserted_int, size_t expe
       return false;
     }
   }
-
   return true;
 }
 
@@ -197,8 +194,9 @@ TEST_F(PSQL_DataTypes_Binary, Insertion_Success) {
     ASSERT_EQ(pk_len, INT_BYTES_EXPECTED);
     ASSERT_EQ(pk, i);    
     if (VALID_INSERTED_VALUES[i] != "NULL") {
+      std::string expected_hex = GetHexRepresentation(VALID_INSERTED_VALUES[i]);
       ASSERT_EQ(data_len, BINARY_BYTES_EXPECTED);
-      ASSERT_TRUE(BinaryCompare(data, VALID_INSERTED_VALUES[i], DATATYPE_SIZE));
+      ASSERT_TRUE(BinaryCompare(data, expected_hex, BINARY_BYTES_EXPECTED - 2));
     }
     else {
       ASSERT_EQ(data_len, SQL_NULL_DATA);
@@ -269,8 +267,9 @@ TEST_F(PSQL_DataTypes_Binary, Update_Success) {
   ASSERT_EQ(rcode, SQL_SUCCESS);
   ASSERT_EQ(pk_len, INT_BYTES_EXPECTED);
   ASSERT_EQ(pk, atoi(PK_INSERTED.c_str()));
+  std::string expected_hex = GetHexRepresentation(DATA_INSERTED);
   ASSERT_EQ(data_len, BINARY_BYTES_EXPECTED);
-  ASSERT_TRUE(BinaryCompare(data, DATA_INSERTED, DATATYPE_SIZE));
+  ASSERT_TRUE(BinaryCompare(data, expected_hex, BINARY_BYTES_EXPECTED - 2));
 
   rcode = SQLFetch(odbcHandler.GetStatementHandle());
   ASSERT_EQ(rcode, SQL_NO_DATA);
@@ -294,8 +293,9 @@ TEST_F(PSQL_DataTypes_Binary, Update_Success) {
     ASSERT_EQ(pk_len, INT_BYTES_EXPECTED);
     ASSERT_EQ(pk, atoi(PK_INSERTED.c_str()));
     if (DATA_UPDATED_VALUES[i] != "NULL") {
+      std::string expected_hex = GetHexRepresentation(DATA_UPDATED_VALUES[i]);
       ASSERT_EQ(data_len, BINARY_BYTES_EXPECTED);
-      ASSERT_TRUE(BinaryCompare(data, DATA_UPDATED_VALUES[i], DATATYPE_SIZE));
+      ASSERT_TRUE(BinaryCompare(data, expected_hex, BINARY_BYTES_EXPECTED - 2));
     }
     else {
       ASSERT_EQ(data_len, SQL_NULL_DATA);
@@ -397,7 +397,7 @@ TEST_F(PSQL_DataTypes_Binary, DISABLED_Comparison_Operators) {
 
   for (int i = 0; i < NUM_OF_DATA; i++) {
     odbcHandler.CloseStmt();
-    odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, OPERATIONS_QUERY, vector<string>{COL1_NAME}));
+    odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, OPERATIONS_QUERY, vector<string>{COL1_NAME}, COL1_NAME + " operator(sys.=) cast(" + INSERTED_PK[i] + "as sys.binary)"));
     ASSERT_NO_FATAL_FAILURE(odbcHandler.BindColumns(BIND_COLUMNS));
 
     rcode = SQLFetch(odbcHandler.GetStatementHandle());
@@ -483,8 +483,9 @@ TEST_F(PSQL_DataTypes_Binary, View_Creation) {
     ASSERT_EQ(pk, i);
 
     if (VALID_INSERTED_VALUES[i] != "NULL") {
+      std::string expected_hex = GetHexRepresentation(VALID_INSERTED_VALUES[i]);
       ASSERT_EQ(data_len, BINARY_BYTES_EXPECTED);
-      ASSERT_TRUE(BinaryCompare(data, VALID_INSERTED_VALUES[i], DATATYPE_SIZE));
+      ASSERT_TRUE(BinaryCompare(data, expected_hex, BINARY_BYTES_EXPECTED - 2));
     }
     else {
       ASSERT_EQ(data_len, SQL_NULL_DATA); 
@@ -588,8 +589,9 @@ TEST_F(PSQL_DataTypes_Binary, Table_Unique_Constraints) {
     ASSERT_EQ(rcode, SQL_SUCCESS);
     ASSERT_EQ(pk_len, INT_BYTES_EXPECTED);
     ASSERT_EQ(pk, i);
+    std::string expected_hex = GetHexRepresentation(VALID_INSERTED_VALUES[i]);
     ASSERT_EQ(data_len, BINARY_BYTES_EXPECTED);
-    ASSERT_TRUE(BinaryCompare(data, VALID_INSERTED_VALUES[i], DATATYPE_SIZE));
+    ASSERT_TRUE(BinaryCompare(data, expected_hex, BINARY_BYTES_EXPECTED - 2));
   }
 
   // Assert that there is no more data
@@ -715,8 +717,9 @@ TEST_F(PSQL_DataTypes_Binary, Table_Composite_Keys) {
     ASSERT_EQ(pk_len, INT_BYTES_EXPECTED);
     ASSERT_EQ(pk, i);
     if (VALID_INSERTED_VALUES[i] != "NULL") {
+      std::string expected_hex = GetHexRepresentation(VALID_INSERTED_VALUES[i]);
       ASSERT_EQ(data_len, BINARY_BYTES_EXPECTED);
-      ASSERT_TRUE(BinaryCompare(data, VALID_INSERTED_VALUES[i], DATATYPE_SIZE));
+      ASSERT_TRUE(BinaryCompare(data, expected_hex, BINARY_BYTES_EXPECTED - 2));
     }
     else {
       ASSERT_EQ(data_len, SQL_NULL_DATA);
@@ -874,8 +877,9 @@ TEST_F(PSQL_DataTypes_Binary, DISABLED_Max_Table_Creation) {
     ASSERT_EQ(pk_len, INT_BYTES_EXPECTED);
     ASSERT_EQ(pk, i);
     if (VALID_INSERTED_VALUES[i] != "NULL") {
+      std::string expected_hex = GetHexRepresentation(VALID_INSERTED_VALUES[i]);
       ASSERT_EQ(data_len, BINARY_BYTES_EXPECTED);
-      ASSERT_TRUE(BinaryCompare(data, VALID_INSERTED_VALUES[i], MAX_DATATYPE_SIZE));
+      ASSERT_TRUE(BinaryCompare(data, expected_hex, BINARY_BYTES_EXPECTED - 2));
     }
     else {
       ASSERT_EQ(data_len, SQL_NULL_DATA);
