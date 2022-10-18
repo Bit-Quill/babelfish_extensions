@@ -665,7 +665,7 @@ TEST_F(PSQL_DataTypes_DateTimeOffset, DISABLED_Comparison_Functions) {
     const char* comp_curr = curr.data();
 
     min_expected = strcmp(comp_curr, comp_min) < 0 ? i : min_expected;
-    max_expected = strcmp(comp_curr, comp_max) > 0 ? i : min_expected;
+    max_expected = strcmp(comp_curr, comp_max) > 0 ? i : max_expected;
   }
   expected_results.push_back(generateExpected(INSERTED_DATA[min_expected]));
   expected_results.push_back(generateExpected(INSERTED_DATA[max_expected]));
