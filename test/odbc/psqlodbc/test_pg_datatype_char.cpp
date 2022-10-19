@@ -179,11 +179,9 @@ string operator_multiple_char(const string& s,unsigned int n){
 
 TEST_F(PSQL_DataTypes_Char, Table_Creation) {
 
-  const int LENGTH_EXPECTED = 1;
   const int PRECISION_EXPECTED = 0;
   const int SCALE_EXPECTED = 0;
   const string NAME_EXPECTED = "unknown";
-  const int L_LENGTH_EXPECTED = 1;
   const string PREFIX_EXPECTED = "'";
   const string SUFFIX_EXPECTED = "'";
 
@@ -288,11 +286,8 @@ TEST_F(PSQL_DataTypes_Char, Table_Creation) {
 
 TEST_F(MSSQL_DataTypes_Char, Table_Creation) {
 
-  const int LENGTH_EXPECTED = 2147483647;
-  const int PRECISION_EXPECTED = 10;
   const int SCALE_EXPECTED = 0;
   const string NAME_EXPECTED = "char";
-  const int L_LENGTH_EXPECTED = 2147483647;
   const string PREFIX_EXPECTED = "'";
   const string SUFFIX_EXPECTED = "'";
 
