@@ -1287,12 +1287,11 @@ vector<pair<string, string>> TABLE_COLUMNS_CHAR = {
   vector <string> operations_query = {
     "CONCAT(" + COL_NAMES[0]+ "," + COL_NAMES[1] + ")",
     //  BBF does not support <, > those comparison operators for string
-    // COL_NAMES[0]+"="+COL_NAMES[1],
-    // COL_NAMES[0]+"<>"+COL_NAMES[1],
-    // COL_NAMES[0]+">"+COL_NAMES[1],
-    // COL_NAMES[0]+"<"+COL_NAMES[1],
-    // COL_NAMES[0]+">="+COL_NAMES[1],
-    // COL_NAMES[0]+"<="+COL_NAMES[1],
+    "iif("+COL_NAMES[0]+" > " + COL_NAMES[1]+", '1', '0')",
+    "iif("+COL_NAMES[0]+" >= " + COL_NAMES[1]+", '1', '0')",
+    "iif("+COL_NAMES[0]+" < " + COL_NAMES[1]+", '1', '0')",
+    "iif("+COL_NAMES[0]+" <= " + COL_NAMES[1]+", '1', '0')",
+    "iif("+COL_NAMES[0]+" <> " + COL_NAMES[1]+", '1', '0')",
     "lower("+COL_NAMES[1]+")"
   };
 
@@ -1302,12 +1301,11 @@ vector<pair<string, string>> TABLE_COLUMNS_CHAR = {
   // initialization of expected_results
   for (int i = 0; i < inserted_pk.size(); i++) {
     expected_results[i].push_back(inserted_pk[i] + inserted_data[i]);
-    // expected_results[i].push_back(std::to_string(inserted_pk[i]==inserted_data[i]));
-    // expected_results[i].push_back(std::to_string(inserted_pk[i]!=inserted_data[i]));
-    // expected_results[i].push_back(std::to_string(inserted_pk[i]>inserted_data[i]));
-    // expected_results[i].push_back(std::to_string(inserted_pk[i]<inserted_data[i]));
-    // expected_results[i].push_back(std::to_string(inserted_pk[i]>=inserted_data[i]));
-    // expected_results[i].push_back(std::to_string(inserted_pk[i]<=inserted_data[i]));
+    expected_results[i].push_back(std::to_string(inserted_pk[i] > inserted_data[i]));
+    expected_results[i].push_back(std::to_string(inserted_pk[i] >= inserted_data[i]));
+    expected_results[i].push_back(std::to_string(inserted_pk[i] < inserted_data[i]));
+    expected_results[i].push_back(std::to_string(inserted_pk[i] <= inserted_data[i]));
+    expected_results[i].push_back(std::to_string(inserted_pk[i] != inserted_data[i]));
     string current=inserted_data[i];
     transform(current.begin(), current.end(), current.begin(), ::tolower);
     expected_results[i].push_back(current);
