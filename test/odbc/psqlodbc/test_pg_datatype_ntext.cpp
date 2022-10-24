@@ -79,11 +79,10 @@ class PSQL_DataTypes_ntext : public testing::Test{
 
 string StringToLower(const string& s){
 
-  string ret="";
-  for(int i=0;i<s.size();i++){
-    char cur=s[i]+32;
-    std::cout<<"Current char is: "<<cur<<"\n";
-    ret= ret+cur;
+  string ret = "";
+  for(int i = 0;i < s.size(); i++){
+    char cur = s[i] + 32;
+    ret = ret + cur;
   }
 
   return ret;
@@ -91,11 +90,11 @@ string StringToLower(const string& s){
 
 string operator_multiple_ntext(const string& s,unsigned int n){
   string ret;
-  for(unsigned int i=0;i<n;i++){
-    ret=ret+s;
+  for(unsigned int i = 0;i < n;i++){
+    ret = ret + s;
   }
-  return ret;
 
+  return ret;
 }
 
 // helper function to initialize insert string (1, "", "", ""), etc.
@@ -104,7 +103,7 @@ string InitializeInsertString_Ntext(const vector<vector<string>> &inserted_value
   string insert_string{};
   string comma{};
 
-  for (int i = 0; i< inserted_values.size(); ++i) {
+  for (int i = 0; i < inserted_values.size(); ++i) {
 
     insert_string += comma + "(";
     string comma2{};
@@ -195,16 +194,6 @@ TEST_F(PSQL_DataTypes_ntext, ColAttributes) {
     ASSERT_EQ(rcode, SQL_SUCCESS);
     ASSERT_EQ(string(name), NAME_EXPECTED);
 
-    // rcode = SQLColAttribute(odbcHandler.GetStatementHandle(),
-    //                         i,
-    //                         SQL_DESC_CASE_SENSITIVE, // Indicates if the column data type is a case-sensitive data type.
-    //                         NULL,
-    //                         0,
-    //                         NULL,
-    //                         (SQLLEN*) &is_case_sensitive); 
-    // ASSERT_EQ(rcode, SQL_SUCCESS);
-    // ASSERT_EQ(is_case_sensitive, SQL_FALSE);
-
     rcode = SQLColAttribute(odbcHandler.GetStatementHandle(),
                             i,
                             SQL_DESC_LITERAL_PREFIX, // Get the prefix of the column
@@ -238,7 +227,6 @@ TEST_F(PSQL_DataTypes_ntext, Table_Create_Fail) {
   vector<vector<pair<string, string>>> invalid_columns{
     {{"invalid1", DATATYPE + "(-1)"}},
     {{"invalid2", DATATYPE + "(0)"}},
-    // {{"invalid3", DATATYPE + "(8001)"}}, -- This works on the postgres endpoint?
     {{"invalid4", DATATYPE + "(NULL)"}}
   };
 
@@ -285,7 +273,7 @@ TEST_F(PSQL_DataTypes_ntext, Insertion_Success) {
 
   // initialize bind_columns
   for (int i = 0; i < NUM_COLS; i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i + 1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
   }
 
@@ -548,8 +536,8 @@ TEST_F(PSQL_DataTypes_ntext, DISABLED_Update_Fail) {
 
   // setup update column
   for (int j = 0; j <NUM_COLS; j++) {
-    if (j==0){
-      string value = string("'")+updated_values[0][j] +string("'");
+    if (j == 0){
+      string value = string("'") + updated_values[0][j] + string("'");
       update_col.push_back(pair<string,string>(COL_NAMES[j], value));
     }
     else{
@@ -619,8 +607,8 @@ vector<pair<string, string>> TABLE_COLUMNS_NTEXT = {
   };
 
   vector <string> operations_query = {
-    COL_NAMES[0]+ "||" + COL_NAMES[1],
-    "lower("+COL_NAMES[1]+")",
+    COL_NAMES[0] + "||" + COL_NAMES[1],
+    "lower(" + COL_NAMES[1] + ")",
     COL_NAMES[0] + ">" + COL_NAMES[1],
     COL_NAMES[0] + ">=" + COL_NAMES[1],
     COL_NAMES[0] + "<=" + COL_NAMES[1],
@@ -634,7 +622,7 @@ vector<pair<string, string>> TABLE_COLUMNS_NTEXT = {
   // initialization of expected_results
   for (int i = 0; i < inserted_pk.size(); i++) {
     expected_results[i].push_back(inserted_pk[i] + inserted_data[i]);
-    string current=inserted_data[i];
+    string current = inserted_data[i];
     transform(current.begin(), current.end(), current.begin(), ::tolower);
     expected_results[i].push_back(current);
     expected_results[i].push_back(std::to_string(inserted_pk[i] > inserted_data[i]));
@@ -700,8 +688,6 @@ vector<pair<string, string>> TABLE_COLUMNS_NTEXT = {
   odbcHandler.CloseStmt();
   odbcHandler.ExecQuery(DropObjectStatement("TABLE", TABLE_NAME));
 }
-
-
 
 TEST_F(PSQL_DataTypes_ntext, View_creation) {
 
