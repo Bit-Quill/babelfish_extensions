@@ -104,7 +104,6 @@ TEST_F(PSQL_DataTypes_SYSNAME, ColAttributes) {
   odbcHandler.ExecQuery(SelectStatement(TABLE_NAME, {"*"}, vector<string> {COL_NAMES[0]}));
 
   for (int i = 1; i <= NUM_COLS; i++) {
-    std::cout<<"The current string is: "<<i<<"\n";
     // Make sure column attributes are correct
     rcode = SQLColAttribute(odbcHandler.GetStatementHandle(),
                             i,
@@ -190,7 +189,6 @@ TEST_F(PSQL_DataTypes_SYSNAME, Table_Create_Fail) {
   vector<vector<pair<string, string>>> invalid_columns{
     {{"invalid1", DATATYPE + "(-1)"}},
     {{"invalid2", DATATYPE + "(0)"}},
-    // {{"invalid3", DATATYPE + "(8001)"}}, -- This works on the postgres endpoint?
     {{"invalid4", DATATYPE + "(NULL)"}}
   };
 
@@ -236,7 +234,7 @@ TEST_F(PSQL_DataTypes_SYSNAME, Insertion_Success) {
 
   // initialize bind_columns
   for (int i = 0; i < NUM_COLS; i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i + 1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
   }
 
@@ -357,7 +355,7 @@ TEST_F(PSQL_DataTypes_SYSNAME, Update_Success) {
 
   // initialize bind_columns
   for (int i = 0; i < NUM_COLS; i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i + 1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
   }
 
@@ -456,7 +454,7 @@ TEST_F(PSQL_DataTypes_SYSNAME, Update_Fail) {
 
   // initialize bind_columns
   for (int i = 0; i < NUM_COLS; i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i + 1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
   }
 
@@ -530,7 +528,7 @@ TEST_F(PSQL_DataTypes_SYSNAME, Update_Fail) {
 }
 
 TEST_F(PSQL_DataTypes_SYSNAME, String_Operators) {
-  const int BUFFER_LENGTH=256;
+  const int BUFFER_LENGTH = 256;
   const int BYTES_EXPECTED = 4;
   const int DOUBLE_BYTES_EXPECTE = 8;
   int pk;
@@ -570,8 +568,12 @@ vector<pair<string, string>> TABLE_COLUMNS_NTEXT = {
   vector <string> operations_query = {
     COL_NAMES[0]+ "||" + COL_NAMES[1],
     "lower("+COL_NAMES[1]+")"
+    COL_NAMES[0] + ">" + COL_NAMES[1],
+    COL_NAMES[0] + ">=" + COL_NAMES[1],
+    COL_NAMES[0] + "<=" + COL_NAMES[1],
+    COL_NAMES[0] + "<" + COL_NAMES[1],
+    COL_NAMES[0] + "<>" + COL_NAMES[1]
   };
-
 
   vector<vector<string>>expected_results = {{},{}};
 
@@ -581,16 +583,20 @@ vector<pair<string, string>> TABLE_COLUMNS_NTEXT = {
     string current=inserted_data[i];
     transform(current.begin(), current.end(), current.begin(), ::tolower);
     expected_results[i].push_back(current);
-    
+    expected_results[i].push_back(std::to_string(inserted_pk[i] > inserted_data[i]));
+    expected_results[i].push_back(std::to_string(inserted_pk[i] >= inserted_data[i]));
+    expected_results[i].push_back(std::to_string(inserted_pk[i] <= inserted_data[i]));
+    expected_results[i].push_back(std::to_string(inserted_pk[i] < inserted_data[i]));
+    expected_results[i].push_back(std::to_string(inserted_pk[i] != inserted_data[i]));
   }
 
-  char col_results[NUM_COLS][BUFFER_LENGTH];
-  SQLLEN col_len[NUM_COLS];
+  char col_results[operations_query.size()][BUFFER_LENGTH];
+  SQLLEN col_len[operations_query.size()];
   vector<tuple<int, int, SQLPOINTER, int, SQLLEN* >> bind_columns = {};
 
   // initialization for bind_columns
   for (int i = 0; i < operations_query.size(); i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i + 1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
   }
 
@@ -665,7 +671,7 @@ TEST_F(PSQL_DataTypes_SYSNAME, View_creation) {
 
   // initialize bind_columns
   for (int i = 0; i < NUM_COLS; i++) {
-    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i+1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
+    tuple<int, int, SQLPOINTER, int, SQLLEN*> tuple_to_insert(i + 1, SQL_C_CHAR, (SQLPOINTER) &col_results[i], BUFFER_LENGTH, &col_len[i]);
     bind_columns.push_back(tuple_to_insert);
   }
 
